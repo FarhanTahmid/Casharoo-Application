@@ -20,6 +20,19 @@ class _LoginPageState extends State<LoginPage>
 
   static const double _maxContentWidth = 440;
 
+  // --- Sign Up state & controllers ---
+  final _signUpFormKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _signUpEmailController = TextEditingController();
+  final _signUpPasswordController = TextEditingController();
+  final _signUpConfirmPasswordController = TextEditingController();
+
+  bool _isSignUpLoading = false;
+  bool _signUpPasswordVisible = false;
+  bool _signUpConfirmPasswordVisible = false;
+  String? _signUpErrorMessage;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +44,14 @@ class _LoginPageState extends State<LoginPage>
     _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+
+    // --- dispose sign up controllers ---
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _signUpEmailController.dispose();
+    _signUpPasswordController.dispose();
+    _signUpConfirmPasswordController.dispose();
+
     super.dispose();
   }
 
@@ -59,6 +80,39 @@ class _LoginPageState extends State<LoginPage>
 
   void _handleForgotPassword() {
     debugPrint("Forgot password tapped");
+  }
+
+  String? _validateStrongPassword(String? value) {
+    final v = value ?? '';
+    if (v.isEmpty) return 'Please enter a password';
+    if (v.length < 8) return 'Password must be at least 8 characters';
+    if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Add at least one uppercase letter';
+    if (!RegExp(r'[a-z]').hasMatch(v)) return 'Add at least one lowercase letter';
+    if (!RegExp(r'\d').hasMatch(v)) return 'Add at least one digit';
+    if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-\\/~`+=]').hasMatch(v)) {
+      return 'Add at least one special character';
+    }
+    if (RegExp(r'\s').hasMatch(v)) return 'Password cannot contain spaces';
+    return null;
+  }
+
+  Future<void> _handleCreateAccount() async {
+    if (_signUpFormKey.currentState!.validate()) {
+      setState(() {
+        _isSignUpLoading = true;
+        _signUpErrorMessage = null;
+      });
+
+      // TODO: Call your sign-up API here with:
+      // _firstNameController.text.trim(), _lastNameController.text.trim(),
+      // _signUpEmailController.text.trim(), _signUpPasswordController.text
+      await Future.delayed(const Duration(seconds: 2));
+
+      setState(() {
+        _isSignUpLoading = false;
+        // _signUpErrorMessage = 'Email already in use'; // example
+      });
+    }
   }
 
   void _handleSignUp() {
@@ -100,7 +154,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Log in to continue",
+                    "Log in or Sign up to continue",
                     textAlign: TextAlign.center,
                     style: tt.bodyMedium,
                   ),
@@ -350,19 +404,19 @@ class _LoginPageState extends State<LoginPage>
 
           const SizedBox(height: 16),
 
-          // Google
+          // Google for Login
           _buildSocialLoginButton(
             context: context,
             onPressed: _handleGoogleLogin,
             icon: Icons.g_mobiledata_rounded,
-            text: "Login with Google",
+            text: "Sign in with Google",
             backgroundColor: theme.colorScheme.surface,
             textColor: theme.colorScheme.onSurface,
             borderColor: theme.dividerColor,
             leading: Image.asset(
               'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
-              width: 22,
-              height: 22,
+              width: 30,
+              height: 30,
             ),
           ),
 
@@ -398,15 +452,266 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildSignUpForm(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return SizedBox(
-      height: 400,
-      child: Center(
-        child: Text(
-          "Sign Up Form\n\n// TODO: Implement sign up form here",
-          textAlign: TextAlign.center,
-          style: tt.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-        ),
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+
+    return Form(
+      key: _signUpFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // First Name
+          Text("First Name", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _firstNameController,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: "John",
+              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.person_outline, color: cs.onSurface.withOpacity(0.7)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your first name' : null,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Last Name
+          Text("Last Name", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _lastNameController,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: "Doe",
+              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.person_outline, color: cs.onSurface.withOpacity(0.7)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your last name' : null,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Email
+          Text("Email", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _signUpEmailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: "info@casharoo.com",
+              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.email_outlined, color: cs.onSurface.withOpacity(0.7)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Please enter your email';
+              if (!RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Password
+          Text("Password", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _signUpPasswordController,
+            obscureText: !_signUpPasswordVisible,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: "At least 8 characters",
+              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.lock_outline, color: cs.onSurface.withOpacity(0.7)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _signUpPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: cs.onSurface.withOpacity(0.7),
+                ),
+                onPressed: () {
+                  setState(() => _signUpPasswordVisible = !_signUpPasswordVisible);
+                },
+              ),
+            ),
+            validator: _validateStrongPassword,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Confirm Password
+          Text("Confirm Password", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _signUpConfirmPasswordController,
+            obscureText: !_signUpConfirmPasswordVisible,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleCreateAccount(),
+            decoration: InputDecoration(
+              hintText: "Re-enter password",
+              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.lock_outline, color: cs.onSurface.withOpacity(0.7)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: cs.primary),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _signUpConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: cs.onSurface.withOpacity(0.7),
+                ),
+                onPressed: () {
+                  setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible);
+                },
+              ),
+            ),
+            validator: (value) {
+              final msg = _validateStrongPassword(value);
+              if (msg != null) return msg;
+              if (value != _signUpPasswordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
+          ),
+
+          if (_signUpErrorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(_signUpErrorMessage!, style: tt.bodySmall?.copyWith(color: cs.error)),
+          ],
+
+          const SizedBox(height: 24),
+
+          // Create Account button
+          SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isSignUpLoading
+                  ? null
+                  : () {
+                      FocusScope.of(context).unfocus();
+                      _handleCreateAccount();
+                    },
+              child: _isSignUpLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      "Create Account",
+                      style: tt.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Divider
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: theme.dividerColor,
+                  thickness: 1,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "or continue with",
+                  // ignore: deprecated_member_use
+                  style: tt.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: theme.dividerColor,
+                  thickness: 1,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Google for Sign Up
+          _buildSocialLoginButton(
+            context: context,
+            onPressed: _handleGoogleLogin,
+            icon: Icons.g_mobiledata_rounded,
+            text: "Sign up with Google",
+            backgroundColor: theme.colorScheme.surface,
+            textColor: theme.colorScheme.onSurface,
+            borderColor: theme.dividerColor,
+            leading: Image.asset(
+              'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
+              width: 30,
+              height: 30,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Back to Log in
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Already have an account? ", style: tt.bodyMedium),
+              TextButton(
+                onPressed: () => _tabController.animateTo(0),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  "Log in",
+                  style: tt.titleMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -445,8 +750,8 @@ class _LoginPageState extends State<LoginPage>
             if (leading != null)
               leading
             else
-              Icon(icon, color: textColor, size: 20),
-            const SizedBox(width: 10),
+              Icon(icon, color: textColor, size: 25),
+            const SizedBox(width: 5),
             Text(
               text,
               style: theme.textTheme.titleMedium?.copyWith(

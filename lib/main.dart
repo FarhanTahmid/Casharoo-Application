@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Import pages
-import 'package:casharoo/screens/user_auth/login_page.dart';
+import 'package:casharoo/screens/user_auth/login_signup_page.dart';
 
 void main() {
   runApp(const CasharooApp());
