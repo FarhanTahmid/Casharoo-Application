@@ -1,4 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'package:casharoo/backend_config.dart';
+import 'package:casharoo/helpers.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,6 +42,10 @@ class _LoginPageState extends State<LoginPage>
   bool _signUpConfirmPasswordVisible = false;
   String? _signUpErrorMessage;
 
+  final _secure = const FlutterSecureStorage();
+  static const _kAccessTokenKey = 'auth_access_token';
+  static const _kRefreshTokenKey = 'auth_refresh_token';
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +66,16 @@ class _LoginPageState extends State<LoginPage>
     _signUpConfirmPasswordController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _saveTokens({String? access, String? refresh}) async {
+    // If your backend didn’t return tokens, don’t overwrite existing ones
+    if (access != null && access.isNotEmpty) {
+      await _secure.write(key: _kAccessTokenKey, value: access);
+    }
+    if (refresh != null && refresh.isNotEmpty) {
+      await _secure.write(key: _kRefreshTokenKey, value: refresh);
+    }
   }
 
   Future<void> _handleEmailLogin() async {
@@ -86,8 +109,12 @@ class _LoginPageState extends State<LoginPage>
     final v = value ?? '';
     if (v.isEmpty) return 'Please enter a password';
     if (v.length < 8) return 'Password must be at least 8 characters';
-    if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Add at least one uppercase letter';
-    if (!RegExp(r'[a-z]').hasMatch(v)) return 'Add at least one lowercase letter';
+    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+      return 'Add at least one uppercase letter';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(v)) {
+      return 'Add at least one lowercase letter';
+    }
     if (!RegExp(r'\d').hasMatch(v)) return 'Add at least one digit';
     if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-\\/~`+=]').hasMatch(v)) {
       return 'Add at least one special character';
@@ -97,20 +124,87 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Future<void> _handleCreateAccount() async {
-    if (_signUpFormKey.currentState!.validate()) {
-      setState(() {
-        _isSignUpLoading = true;
-        _signUpErrorMessage = null;
-      });
+    if (!_signUpFormKey.currentState!.validate()) return;
+    setState(() {
+      _isSignUpLoading = true;
+      _signUpErrorMessage = null;
+    });
 
-      // TODO: Call your sign-up API here with:
-      // _firstNameController.text.trim(), _lastNameController.text.trim(),
-      // _signUpEmailController.text.trim(), _signUpPasswordController.text
-      await Future.delayed(const Duration(seconds: 2));
+    final Uri uri = BackendConfig.endpoint('/app_users/register/');
 
+    final body = jsonEncode({
+      'email': _signUpEmailController.text.trim(),
+      'password': _signUpPasswordController.text,
+      'password_confirm': _signUpConfirmPasswordController.text,
+      'first_name': _firstNameController.text.trim(),
+      'last_name': _lastNameController.text.trim(),
+    });
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 15));
+      debugPrint("Sign up response: ${response.statusCode} ${response.body}");
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final tokens = (data['tokens'] as Map?)?.cast<String, dynamic>();
+
+        // Store tokens securely
+        await _saveTokens(
+          access: tokens?['access'] as String?,
+          refresh: tokens?['refresh'] as String?,
+        );
+
+        if (!mounted) return;
+        setState(() => _isSignUpLoading = false);
+
+        // TODO: Navigate to home screen
+        debugPrint("Account created successfully");
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+        return;
+      }
+
+      if (response.statusCode == 400) {
+        final msg =
+            HelperFunctions.extractDjangoError(response.body) ?? 'Invalid data';
+        if (!mounted) return;
+        setState(() {
+          _isSignUpLoading = false;
+          _signUpErrorMessage = msg;
+        });
+        return;
+      }
+      if (!mounted) return;
       setState(() {
         _isSignUpLoading = false;
-        // _signUpErrorMessage = 'Email already in use'; // example
+        _signUpErrorMessage =
+            'Server error (${response.statusCode}). Please try again.';
+      });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _isSignUpLoading = false;
+        _signUpErrorMessage =
+            'Request timed out. Check your internet connection.';
+      });
+    } on SocketException {
+      if (!mounted) return;
+      setState(() {
+        _isSignUpLoading = false;
+        _signUpErrorMessage = 'No internet connection.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSignUpLoading = false;
+        _signUpErrorMessage = 'An unexpected error occurred! Please try again.';
       });
     }
   }
@@ -150,7 +244,9 @@ class _LoginPageState extends State<LoginPage>
                   Text(
                     "Welcome to Casharoo",
                     textAlign: TextAlign.center,
-                    style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: tt.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -177,9 +273,12 @@ class _LoginPageState extends State<LoginPage>
                       labelColor: cs.onPrimary,
                       // ignore: deprecated_member_use
                       unselectedLabelColor: cs.onSurface.withOpacity(0.8),
-                      labelStyle: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                      unselectedLabelStyle:
-                          tt.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                      labelStyle: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                       dividerColor: Colors.transparent,
                       indicator: BoxDecoration(
                         gradient: LinearGradient(
@@ -198,7 +297,9 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicatorPadding: const EdgeInsets.all(2),
-                      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+                      overlayColor: const WidgetStatePropertyAll(
+                        Colors.transparent,
+                      ),
                     ),
                   ),
 
@@ -248,7 +349,10 @@ class _LoginPageState extends State<LoginPage>
               // ignore: deprecated_member_use
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
               // ignore: deprecated_member_use
-              prefixIcon: Icon(Icons.email_outlined, color: cs.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
               // Borders default to your InputDecorationTheme; tweak radii to match app
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -263,7 +367,9 @@ class _LoginPageState extends State<LoginPage>
               if (value == null || value.isEmpty) {
                 return 'Please enter your email';
               }
-              if (!RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Please enter a valid email';
               }
               return null;
@@ -286,7 +392,10 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "••••••••••",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.lock_outline, color: cs.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
@@ -329,7 +438,10 @@ class _LoginPageState extends State<LoginPage>
 
           if (_errorMessage != null) ...[
             const SizedBox(height: 8),
-            Text(_errorMessage!, style: tt.bodySmall?.copyWith(color: cs.error)),
+            Text(
+              _errorMessage!,
+              style: tt.bodySmall?.copyWith(color: cs.error),
+            ),
           ],
 
           const SizedBox(height: 8),
@@ -379,26 +491,18 @@ class _LoginPageState extends State<LoginPage>
           // Divider
           Row(
             children: [
-              Expanded(
-                child: Divider(
-                  color: theme.dividerColor,
-                  thickness: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
-                  "or continue with",
+                  "or",
                   // ignore: deprecated_member_use
-                  style: tt.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ),
-              Expanded(
-                child: Divider(
-                  color: theme.dividerColor,
-                  thickness: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
             ],
           ),
 
@@ -462,7 +566,10 @@ class _LoginPageState extends State<LoginPage>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // First Name
-          Text("First Name", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            "First Name",
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _firstNameController,
@@ -470,21 +577,31 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "John",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.person_outline, color: cs.onSurface.withOpacity(0.7)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: cs.primary),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your first name' : null,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Please enter your first name'
+                : null,
           ),
 
           const SizedBox(height: 16),
 
           // Last Name
-          Text("Last Name", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            "Last Name",
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _lastNameController,
@@ -492,21 +609,31 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "Doe",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.person_outline, color: cs.onSurface.withOpacity(0.7)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: cs.primary),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your last name' : null,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Please enter your last name'
+                : null,
           ),
 
           const SizedBox(height: 16),
 
           // Email
-          Text("Email", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            "Email",
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _signUpEmailController,
@@ -515,8 +642,13 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "info@casharoo.com",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.email_outlined, color: cs.onSurface.withOpacity(0.7)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: cs.primary),
@@ -524,8 +656,11 @@ class _LoginPageState extends State<LoginPage>
               contentPadding: const EdgeInsets.all(16),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Please enter your email';
-              if (!RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (value == null || value.isEmpty)
+                return 'Please enter your email';
+              if (!RegExp(
+                r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Please enter a valid email';
               }
               return null;
@@ -535,7 +670,10 @@ class _LoginPageState extends State<LoginPage>
           const SizedBox(height: 16),
 
           // Password
-          Text("Password", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            "Password",
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _signUpPasswordController,
@@ -544,7 +682,10 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "At least 8 characters",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.lock_outline, color: cs.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: cs.primary),
@@ -556,11 +697,15 @@ class _LoginPageState extends State<LoginPage>
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _signUpPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  _signUpPasswordVisible
+                      ? Icons.visibility
+                      : Icons.visibility_off,
                   color: cs.onSurface.withOpacity(0.7),
                 ),
                 onPressed: () {
-                  setState(() => _signUpPasswordVisible = !_signUpPasswordVisible);
+                  setState(
+                    () => _signUpPasswordVisible = !_signUpPasswordVisible,
+                  );
                 },
               ),
             ),
@@ -570,7 +715,10 @@ class _LoginPageState extends State<LoginPage>
           const SizedBox(height: 16),
 
           // Confirm Password
-          Text("Confirm Password", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            "Confirm Password",
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _signUpConfirmPasswordController,
@@ -580,7 +728,10 @@ class _LoginPageState extends State<LoginPage>
             decoration: InputDecoration(
               hintText: "Re-enter password",
               hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(Icons.lock_outline, color: cs.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: cs.onSurface.withOpacity(0.7),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: cs.primary),
@@ -592,11 +743,16 @@ class _LoginPageState extends State<LoginPage>
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _signUpConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  _signUpConfirmPasswordVisible
+                      ? Icons.visibility
+                      : Icons.visibility_off,
                   color: cs.onSurface.withOpacity(0.7),
                 ),
                 onPressed: () {
-                  setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible);
+                  setState(
+                    () => _signUpConfirmPasswordVisible =
+                        !_signUpConfirmPasswordVisible,
+                  );
                 },
               ),
             ),
@@ -612,7 +768,10 @@ class _LoginPageState extends State<LoginPage>
 
           if (_signUpErrorMessage != null) ...[
             const SizedBox(height: 8),
-            Text(_signUpErrorMessage!, style: tt.bodySmall?.copyWith(color: cs.error)),
+            Text(
+              _signUpErrorMessage!,
+              style: tt.bodySmall?.copyWith(color: cs.error),
+            ),
           ],
 
           const SizedBox(height: 24),
@@ -648,26 +807,18 @@ class _LoginPageState extends State<LoginPage>
           // Divider
           Row(
             children: [
-              Expanded(
-                child: Divider(
-                  color: theme.dividerColor,
-                  thickness: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
-                  "or continue with",
+                  "or",
                   // ignore: deprecated_member_use
-                  style: tt.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ),
-              Expanded(
-                child: Divider(
-                  color: theme.dividerColor,
-                  thickness: 1,
-                ),
-              ),
+              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
             ],
           ),
 
@@ -725,12 +876,16 @@ class _LoginPageState extends State<LoginPage>
     required Color backgroundColor,
     required Color textColor,
     Color? borderColor,
-    Widget? leading, required BuildContext context,
+    Widget? leading,
+    required BuildContext context,
   }) {
     final theme = Theme.of(context);
 
-    final sideColor = borderColor ??
-        (theme.brightness == Brightness.light ? Colors.grey.shade300 : Colors.white12);
+    final sideColor =
+        borderColor ??
+        (theme.brightness == Brightness.light
+            ? Colors.grey.shade300
+            : Colors.white12);
 
     return SizedBox(
       height: 50,

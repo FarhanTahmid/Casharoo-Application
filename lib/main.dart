@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'package:casharoo/auth.dart';
 
 // Import pages
 import 'package:casharoo/screens/user_auth/login_signup_page.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: '.env');
   runApp(const CasharooApp());
 }
 
@@ -27,9 +31,9 @@ class CasharooApp extends StatelessWidget {
 // App Theme Configuration
 class AppTheme {
   // App Colors
-  static const Color primaryColor = Color.fromARGB(255, 29, 87, 196);
-  static const Color secondaryColor = Color(0xFF1E40AF);
-  static const Color accentColor = Color.fromARGB(255, 64, 60, 250);
+  static const Color primaryColor = Color.fromARGB(255, 19, 106, 238);
+  static const Color secondaryColor = Color.fromARGB(255, 32, 158, 243);
+  static const Color accentColor = Color.fromARGB(255, 111, 50, 253);
   static const Color backgroundColor = Color(0xFFFAFAFA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFEF4444);
@@ -112,12 +116,10 @@ class AppTheme {
       primary: primaryColor,
       secondary: secondaryColor,
       tertiary: accentColor,
-      background: darkBackgroundColor,
       surface: darkSurfaceColor,
       error: errorColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onBackground: darkTextPrimary,
       onSurface: darkTextPrimary,
       onError: Colors.white,
     ),
@@ -136,7 +138,7 @@ class AppTheme {
 
 // App Fonts Configuration
 class AppFonts {
-  // TODO: Add your custom fonts to pubspec.yaml and update these
+  // TODO: Add custom fonts to pubspec.yaml and update these
   static const String primaryFont = 'Inter'; // Replace with your font
   static const String secondaryFont = 'Roboto'; // Replace with your font
 
@@ -308,16 +310,22 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _performAuthCheck() async {
     // Minimum splash screen display time
     await Future.delayed(const Duration(seconds: 2));
-
-    // TODO: Implement your authentication check here
-    // Example:
-    // bool isLoggedIn = await AuthService.checkAuthStatus();
-    // bool hasCompletedOnboarding = await PreferenceService.hasCompletedOnboarding();
-
-    // For now, simulate auth check
-    bool isLoggedIn = false; // Replace with your auth logic
-    bool hasCompletedOnboarding = true; // Replace with your onboarding logic
-
+    bool isLoggedIn = false;
+    bool hasCompletedOnboarding = false;
+    print("Performing authentication check...");
+    // Check authentication status
+    final authStatus = await AuthService.checkAuthStatus();
+    if (authStatus['isAuthenticated'] == null) {
+      // If auth status check failed, assume not authenticated
+      _navigateBasedOnAuthStatus(false, false);
+      return;
+    }else if (authStatus['isAuthenticated'] == true) {
+      isLoggedIn = true;
+      if (authStatus['user_data'] != null) {
+        hasCompletedOnboarding = authStatus['user_data']['has_completed_onboarding'] ?? false;
+      }
+    }
+    
     if (!mounted) return;
 
     _navigateBasedOnAuthStatus(isLoggedIn, hasCompletedOnboarding);
@@ -327,17 +335,17 @@ class _SplashScreenState extends State<SplashScreen>
     bool isLoggedIn,
     bool hasCompletedOnboarding,
   ) {
-    // TODO: Replace with your actual page navigation
-    if (isLoggedIn) {
+    if (isLoggedIn && hasCompletedOnboarding) {
       // User is logged in, go to home page
       _navigateToPage(const PlaceholderPage(title: "Home Page"));
+      // TODO
       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
-    } else if (!hasCompletedOnboarding) {
+    } else if (isLoggedIn && !hasCompletedOnboarding) {
       // User hasn't completed onboarding, go to onboarding
       _navigateToPage(const PlaceholderPage(title: "Onboarding Page"));
+      // TODO:
       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OnboardingPage()));
     } else {
-      print("in here");
       // User needs to login
       _navigateToPage(const PlaceholderPage(title: "Login Page"));
       Navigator.pushReplacement(
@@ -346,7 +354,6 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
   }
-
   void _navigateToPage(Widget page) {
     Navigator.pushReplacement(
       context,
