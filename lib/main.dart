@@ -310,26 +310,39 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _performAuthCheck() async {
     // Minimum splash screen display time
     await Future.delayed(const Duration(seconds: 2));
+    
     bool isLoggedIn = false;
-    bool hasCompletedOnboarding = false;
-    print("Performing authentication check...");
-    // Check authentication status
-    final authStatus = await AuthService.checkAuthStatus();
-    if (authStatus['isAuthenticated'] == null) {
-      // If auth status check failed, assume not authenticated
-      _navigateBasedOnAuthStatus(false, false);
-      return;
-    }else if (authStatus['isAuthenticated'] == true) {
-      isLoggedIn = true;
-      if (authStatus['user_data'] != null) {
-        hasCompletedOnboarding = authStatus['user_data']['has_completed_onboarding'] ?? false;
+    bool hasCompletedOnboarding = false;    
+    try {
+      // Check authentication status
+      final authStatus = await AuthService.checkAuthStatus();
+      
+      // Check if the response contains authentication info
+      if (authStatus.containsKey('isAuthenticated')) {
+        if (authStatus['isAuthenticated'] == true) {
+          isLoggedIn = true;
+          // Check onboarding status from user data
+          if (authStatus['user_data'] != null) {
+            hasCompletedOnboarding = authStatus['user_data']['has_completed_onboarding'] ?? false;
+          }
+        } else {
+          // ToDO: Implement SnackBar or dialog for unauthenticated users
+          print("User is not authenticated: ${authStatus['message'] ?? 'Unknown reason'}");
+        }
+      } else {
+        // ToDO: Implement SnackBar or dialog for unauthenticated users
+        print("Auth status check failed: ${authStatus['message'] ?? 'Unknown error'}");
       }
+    } catch (e) {
+      // In case of error, assume not authenticated
+      isLoggedIn = false;
+      hasCompletedOnboarding = false;
     }
     
     if (!mounted) return;
 
     _navigateBasedOnAuthStatus(isLoggedIn, hasCompletedOnboarding);
-  }
+}
 
   void _navigateBasedOnAuthStatus(
     bool isLoggedIn,

@@ -51,42 +51,80 @@ class AuthService {
 
   // check if user is authenticated
   static Future<Map<String, dynamic>> checkAuthStatus() async {
-    final Uri uri = BackendConfig.endpoint('/app_users/auth-status/');
-    print("Checking authentication status at: $uri");
-    final accessToken = await getAccessToken(useCache: true);
-    if (accessToken == null) {
-      return {'isAuthenticated': false, 'message': 'No access token found'};
-    }
     try {
+      final Uri uri = BackendConfig.endpoint('/app_users/auth-status/');
+      debugPrint("Checking authentication status at: $uri");
+      
+      final accessToken = await getAccessToken(useCache: true);
+      if (accessToken == null) {
+        debugPrint("No access token found");
+        return {'isAuthenticated': false, 'message': 'No access token found'};
+      }
+      
+      debugPrint("Found access token, making request...");
+      
       final response = await http.get(
         uri,
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         },
+      ).timeout(
+        const Duration(seconds: 10), // Add timeout
+        onTimeout: () {
+          throw Exception('Request timeout');
+        },
       );
-      debugPrint(
-        "Auth status response: ${response.statusCode} ${response.body}",
-      );
+      
+      debugPrint("Auth status response: ${response.statusCode}");
+      debugPrint("Response body: ${response.body}");
+      
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final Map<String, dynamic> result = jsonDecode(response.body);
+        debugPrint("Successfully parsed auth status: $result");
+        return result;
       } else if (response.statusCode == 401) {
-        // Token might be expired so refresh it
-        return await refreshAccessToken();
+        debugPrint("Token expired, attempting refresh...");
+        // Token might be expired, try to refresh it
+        final refreshResult = await refreshAccessToken();
+        if (refreshResult['success'] == true) {
+          // Retry auth check with new token
+          debugPrint("Token refreshed, retrying auth check...");
+          return await checkAuthStatus();
+        } else {
+          debugPrint("Token refresh failed: ${refreshResult['message']}");
+          return {
+            'isAuthenticated': false,
+            'message': 'Token refresh failed: ${refreshResult['message']}',
+          };
+        }
       } else {
+        debugPrint("Auth check failed with status: ${response.statusCode}");
         return {
           'isAuthenticated': false,
-          'message': 'Failed to check authentication status',
+          'message': 'HTTP ${response.statusCode}: ${response.body}',
         };
       }
     } catch (e) {
       debugPrint("Error checking authentication status: $e");
+      // Provide more specific error information
+      String errorMessage = 'Unknown error';
+      if (e.toString().contains('SocketException')) {
+        errorMessage = 'Network connection failed - check your internet connection and backend URL';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Request timeout - backend might be unreachable';
+      } else if (e.toString().contains('FormatException')) {
+        errorMessage = 'Invalid response format from backend';
+      } else {
+        errorMessage = e.toString();
+      }
+      
       return {
         'isAuthenticated': false,
-        'message': 'Error checking authentication status',
+        'message': 'Error: $errorMessage',
       };
     }
-  } //Check auth status end
+  }
 
   // Refresh access token using refresh token
   static Future<Map<String, dynamic>> refreshAccessToken() async {

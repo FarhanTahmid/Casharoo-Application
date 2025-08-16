@@ -233,95 +233,99 @@ class _LoginPageState extends State<LoginPage>
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 32),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 32),
 
-                  // Heading
-                  Text(
-                    "Welcome to Casharoo",
-                    textAlign: TextAlign.center,
-                    style: tt.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    // Heading
+                    Text(
+                      "Welcome to Casharoo",
+                      textAlign: TextAlign.center,
+                      style: tt.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Log in or Sign up to continue",
-                    textAlign: TextAlign.center,
-                    style: tt.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Log in or Sign up to continue",
+                      textAlign: TextAlign.center,
+                      style: tt.bodyMedium,
+                    ),
+                    const SizedBox(height: 24),
 
-                  // Segmented TabBar (theme-aware, gradient pill)
-                  Container(
-                    decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
-                      color: cs.primary.withOpacity(0.08), // light bluish track
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: TabBar(
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: "Log in"),
-                        Tab(text: "Sign up"),
-                      ],
-                      labelColor: cs.onPrimary,
-                      // ignore: deprecated_member_use
-                      unselectedLabelColor: cs.onSurface.withOpacity(0.8),
-                      labelStyle: tt.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    // Segmented TabBar (theme-aware, gradient pill)
+                    Container(
+                      decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
+                        color: cs.primary.withOpacity(0.08), // light bluish track
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      unselectedLabelStyle: tt.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      dividerColor: Colors.transparent,
-                      indicator: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [cs.secondary, cs.primary],
+                      padding: const EdgeInsets.all(4),
+                      child: TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(text: "Log in"),
+                          Tab(text: "Sign up"),
+                        ],
+                        labelColor: cs.onPrimary,
+                        // ignore: deprecated_member_use
+                        unselectedLabelColor: cs.onSurface.withOpacity(0.8),
+                        labelStyle: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
-                            color: Color(0x1A000000),
+                        unselectedLabelStyle: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        dividerColor: Colors.transparent,
+                        indicator: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [cs.secondary, cs.primary],
                           ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                              color: Color(0x1A000000),
+                            ),
+                          ],
+                        ),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        indicatorPadding: const EdgeInsets.all(2),
+                        overlayColor: const WidgetStatePropertyAll(
+                          Colors.transparent,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    SizedBox(
+                      height: tabViewHeight,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildLoginForm(context),
+                          _buildSignUpForm(context),
                         ],
                       ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      indicatorPadding: const EdgeInsets.all(2),
-                      overlayColor: const WidgetStatePropertyAll(
-                        Colors.transparent,
-                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  SizedBox(
-                    height: tabViewHeight,
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildLoginForm(context),
-                        _buildSignUpForm(context),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+
   }
 
   Widget _buildLoginForm(BuildContext context) {
@@ -329,229 +333,249 @@ class _LoginPageState extends State<LoginPage>
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
 
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Email
-          Text(
-            "Your Email",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: "info@casharoo.com",
-              // ignore: deprecated_member_use
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              // ignore: deprecated_member_use
-              prefixIcon: Icon(
-                Icons.email_outlined,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              // Borders default to your InputDecorationTheme; tweak radii to match app
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              if (!RegExp(
-                r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value)) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Password
-          Text(
-            "Password",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _passwordController,
-            obscureText: !_isPasswordVisible,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _handleEmailLogin(),
-            decoration: InputDecoration(
-              hintText: "••••••••••",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: _errorMessage != null ? cs.error : Colors.grey,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: _errorMessage != null ? cs.error : cs.primary,
-                ),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.error),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  color: cs.onSurface.withOpacity(0.7),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isPasswordVisible = !_isPasswordVisible;
-                  });
-                },
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your password';
-              }
-              if (value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
-              return null;
-            },
-          ),
-
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage!,
-              style: tt.bodySmall?.copyWith(color: cs.error),
-            ),
-          ],
-
-          const SizedBox(height: 8),
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _handleForgotPassword,
-              child: Text(
-                "Forgot password?",
-                style: tt.titleMedium?.copyWith(color: cs.primary),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Continue
-          SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () {
-                      FocusScope.of(context).unfocus();
-                      _handleEmailLogin();
+    // Make the form scrollable within the TabBarView's fixed height
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 12),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Form(
+                key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Email
+                  Text(
+                    "Your Email",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: "info@casharoo.com",
+                      // ignore: deprecated_member_use
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      // ignore: deprecated_member_use
+                      prefixIcon: Icon(
+                        Icons.email_outlined,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(
+                        r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
                     },
-              // Uses your ElevatedButtonTheme for colors/radius; keep height only
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      "Continue",
-                      style: tt.titleLarge?.copyWith(
-                        color: theme.colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Password
+                  Text(
+                    "Password",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _handleEmailLogin(),
+                    decoration: InputDecoration(
+                      hintText: "••••••••••",
+                      hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: _errorMessage != null ? cs.error : Colors.grey,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: _errorMessage != null ? cs.error : cs.primary,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.error),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: cs.onSurface.withOpacity(0.7),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
                       ),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      style: tt.bodySmall?.copyWith(color: cs.error),
+                    ),
+                  ],
+
+                  const SizedBox(height: 8),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _handleForgotPassword,
+                      child: Text(
+                        "Forgot password?",
+                        style: tt.titleMedium?.copyWith(color: cs.primary),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Continue
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              FocusScope.of(context).unfocus();
+                              _handleEmailLogin();
+                            },
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              "Continue",
+                              style: tt.titleLarge?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Divider(
+                              color: theme.dividerColor, thickness: 1)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text(
+                          "or",
+                          // ignore: deprecated_member_use
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                          child: Divider(
+                              color: theme.dividerColor, thickness: 1)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Google for Login
+                  _buildSocialLoginButton(
+                    context: context,
+                    onPressed: _handleGoogleLogin,
+                    icon: Icons.g_mobiledata_rounded,
+                    text: "Sign in with Google",
+                    backgroundColor: theme.colorScheme.surface,
+                    textColor: theme.colorScheme.onSurface,
+                    borderColor: theme.dividerColor,
+                    leading: Image.asset(
+                      'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
+                      width: 30,
+                      height: 30,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Sign Up link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Don't have an account? ", style: tt.bodyMedium),
+                      TextButton(
+                        onPressed: _handleSignUp,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          "Sign up",
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // Divider
-          Row(
-            children: [
-              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  "or",
-                  // ignore: deprecated_member_use
-                  style: tt.bodySmall?.copyWith(
-                    color: cs.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
-            ],
           ),
-
-          const SizedBox(height: 16),
-
-          // Google for Login
-          _buildSocialLoginButton(
-            context: context,
-            onPressed: _handleGoogleLogin,
-            icon: Icons.g_mobiledata_rounded,
-            text: "Sign in with Google",
-            backgroundColor: theme.colorScheme.surface,
-            textColor: theme.colorScheme.onSurface,
-            borderColor: theme.dividerColor,
-            leading: Image.asset(
-              'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
-              width: 30,
-              height: 30,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Sign Up link
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Don't have an account? ", style: tt.bodyMedium),
-              TextButton(
-                onPressed: _handleSignUp,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  "Sign up",
-                  style: tt.titleMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -560,312 +584,341 @@ class _LoginPageState extends State<LoginPage>
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
 
-    return Form(
-      key: _signUpFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // First Name
-          Text(
-            "First Name",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _firstNameController,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: "John",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.person_outline,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Please enter your first name'
-                : null,
-          ),
+    // Make the sign-up form scrollable within the TabBarView's fixed height
+    return LayoutBuilder(
+    builder: (context, constraints) {
+      return ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 12),
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Form(
+              key: _signUpFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // First Name
+                  Text(
+                    "First Name",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _firstNameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: "John",
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.person_outline,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty)
+                            ? 'Please enter your first name'
+                            : null,
+                  ),
 
-          const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-          // Last Name
-          Text(
-            "Last Name",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _lastNameController,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: "Doe",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.person_outline,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Please enter your last name'
-                : null,
-          ),
+                  // Last Name
+                  Text(
+                    "Last Name",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _lastNameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: "Doe",
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.person_outline,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty)
+                            ? 'Please enter your last name'
+                            : null,
+                  ),
 
-          const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-          // Email
-          Text(
-            "Email",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _signUpEmailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: "info@casharoo.com",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.email_outlined,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty)
-                return 'Please enter your email';
-              if (!RegExp(
-                r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value)) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Password
-          Text(
-            "Password",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _signUpPasswordController,
-            obscureText: !_signUpPasswordVisible,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: "At least 8 characters",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _signUpPasswordVisible
-                      ? Icons.visibility
-                      : Icons.visibility_off,
-                  color: cs.onSurface.withOpacity(0.7),
-                ),
-                onPressed: () {
-                  setState(
-                    () => _signUpPasswordVisible = !_signUpPasswordVisible,
-                  );
-                },
-              ),
-            ),
-            validator: _validateStrongPassword,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Confirm Password
-          Text(
-            "Confirm Password",
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _signUpConfirmPasswordController,
-            obscureText: !_signUpConfirmPasswordVisible,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _handleCreateAccount(),
-            decoration: InputDecoration(
-              hintText: "Re-enter password",
-              hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.4)),
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: cs.onSurface.withOpacity(0.7),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: cs.primary),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _signUpConfirmPasswordVisible
-                      ? Icons.visibility
-                      : Icons.visibility_off,
-                  color: cs.onSurface.withOpacity(0.7),
-                ),
-                onPressed: () {
-                  setState(
-                    () => _signUpConfirmPasswordVisible =
-                        !_signUpConfirmPasswordVisible,
-                  );
-                },
-              ),
-            ),
-            validator: (value) {
-              final msg = _validateStrongPassword(value);
-              if (msg != null) return msg;
-              if (value != _signUpPasswordController.text) {
-                return 'Passwords do not match';
-              }
-              return null;
-            },
-          ),
-
-          if (_signUpErrorMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _signUpErrorMessage!,
-              style: tt.bodySmall?.copyWith(color: cs.error),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // Create Account button
-          SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isSignUpLoading
-                  ? null
-                  : () {
-                      FocusScope.of(context).unfocus();
-                      _handleCreateAccount();
+                  // Email
+                  Text(
+                    "Email",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _signUpEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: "info@casharoo.com",
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.email_outlined,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(
+                        r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
                     },
-              child: _isSignUpLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      "Create Account",
-                      style: tt.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Password
+                  Text(
+                    "Password",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _signUpPasswordController,
+                    obscureText: !_signUpPasswordVisible,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: "At least 8 characters",
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _signUpPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: cs.onSurface.withOpacity(0.7),
+                        ),
+                        onPressed: () {
+                          setState(() =>
+                              _signUpPasswordVisible = !_signUpPasswordVisible);
+                        },
                       ),
                     ),
+                    validator: _validateStrongPassword,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Confirm Password
+                  Text(
+                    "Confirm Password",
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _signUpConfirmPasswordController,
+                    obscureText: !_signUpConfirmPasswordVisible,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _handleCreateAccount(),
+                    decoration: InputDecoration(
+                      hintText: "Re-enter password",
+                      hintStyle:
+                          TextStyle(color: cs.onSurface.withOpacity(0.4)),
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: cs.onSurface.withOpacity(0.7),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _signUpConfirmPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: cs.onSurface.withOpacity(0.7),
+                        ),
+                        onPressed: () {
+                          setState(() => _signUpConfirmPasswordVisible =
+                              !_signUpConfirmPasswordVisible);
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      final msg = _validateStrongPassword(value);
+                      if (msg != null) return msg;
+                      if (value != _signUpPasswordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  if (_signUpErrorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _signUpErrorMessage!,
+                      style: tt.bodySmall?.copyWith(color: cs.error),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Create Account button
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isSignUpLoading
+                          ? null
+                          : () {
+                              FocusScope.of(context).unfocus();
+                              _handleCreateAccount();
+                            },
+                      child: _isSignUpLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              "Create Account",
+                              style: tt.titleLarge?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Divider(
+                              color: theme.dividerColor, thickness: 1)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text(
+                          "or",
+                          // ignore: deprecated_member_use
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                          child: Divider(
+                              color: theme.dividerColor, thickness: 1)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Google for Sign Up
+                  _buildSocialLoginButton(
+                    context: context,
+                    onPressed: _handleGoogleLogin,
+                    icon: Icons.g_mobiledata_rounded,
+                    text: "Sign up with Google",
+                    backgroundColor: theme.colorScheme.surface,
+                    textColor: theme.colorScheme.onSurface,
+                    borderColor: theme.dividerColor,
+                    leading: Image.asset(
+                      'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
+                      width: 30,
+                      height: 30,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Back to Log in
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Already have an account? ", style: tt.bodyMedium),
+                      TextButton(
+                        onPressed: () => _tabController.animateTo(0),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          "Log in",
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // Divider
-          Row(
-            children: [
-              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  "or",
-                  // ignore: deprecated_member_use
-                  style: tt.bodySmall?.copyWith(
-                    color: cs.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: theme.dividerColor, thickness: 1)),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Google for Sign Up
-          _buildSocialLoginButton(
-            context: context,
-            onPressed: _handleGoogleLogin,
-            icon: Icons.g_mobiledata_rounded,
-            text: "Sign up with Google",
-            backgroundColor: theme.colorScheme.surface,
-            textColor: theme.colorScheme.onSurface,
-            borderColor: theme.dividerColor,
-            leading: Image.asset(
-              'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
-              width: 30,
-              height: 30,
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Back to Log in
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Already have an account? ", style: tt.bodyMedium),
-              TextButton(
-                onPressed: () => _tabController.animateTo(0),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  "Log in",
-                  style: tt.titleMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        );
+      },
     );
   }
+
 
   /// Same signature; themed and flexible. Keeps your `leading` override.
   Widget _buildSocialLoginButton({
