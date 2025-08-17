@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 
 import 'package:casharoo/auth.dart';
+import 'package:casharoo/toast_builder.dart';
 
 // Import pages
 import 'package:casharoo/screens/user_auth/login_signup_page.dart';
@@ -324,14 +327,16 @@ class _SplashScreenState extends State<SplashScreen>
           // Check onboarding status from user data
           if (authStatus['user_data'] != null) {
             hasCompletedOnboarding = authStatus['user_data']['has_completed_onboarding'] ?? false;
+            // Show a toast message based on onboarding status
+            await AppToast.show(context, message: "Welcome back!", type: AppToastType.success);
           }
         } else {
-          // ToDO: Implement SnackBar or dialog for unauthenticated users
           print("User is not authenticated: ${authStatus['message'] ?? 'Unknown reason'}");
+          await AppToast.show(context, message: "Please log in to continue.", type: AppToastType.warning, seconds: 4);
         }
       } else {
-        // ToDO: Implement SnackBar or dialog for unauthenticated users
         print("Auth status check failed: ${authStatus['message'] ?? 'Unknown error'}");
+        await AppToast.show(context, message: "Authentication check failed.", type: AppToastType.error,seconds: 4);
       }
     } catch (e) {
       // In case of error, assume not authenticated
