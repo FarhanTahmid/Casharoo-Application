@@ -20,5 +20,4 @@ class HelperFunctions {
     } catch (_) {}
     return null;
   }
-
 }

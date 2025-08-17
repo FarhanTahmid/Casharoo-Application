@@ -9,11 +9,13 @@ class AuthService {
   static const _secure = FlutterSecureStorage();
   static const _accessTokenKey = 'auth_access_token';
   static const _refreshTokenKey = 'auth_refresh_token';
+  static const user_id = 'user_id';
 
   static String? _cachedAccess;
   static String? _cachedRefresh;
+  static String? _cachedUserId;
 
-  // Store tokens in shared preferences
+  // Store tokens in Secure Storage
   static Future<void> storeTokens(
     String accessToken,
     String refreshToken,
@@ -26,6 +28,14 @@ class AuthService {
       await _secure.write(key: _refreshTokenKey, value: refreshToken);
     }
   }
+
+  static Future<void> storeUserId(String userId) async {
+    if (userId.isNotEmpty) {
+      await _secure.write(key: user_id, value: userId);
+      _cachedUserId = userId;
+    }
+  }
+
 
   // Get stored access token
   static Future<String?> getAccessToken({bool useCache = true}) async {
@@ -41,12 +51,26 @@ class AuthService {
     return _cachedRefresh;
   }
 
+  // Get stored user ID
+  static Future<String?> getUserId({bool useCache = true}) async {
+    if (useCache && _cachedUserId != null) return _cachedUserId;
+    _cachedUserId = await _secure.read(key: user_id);
+    return _cachedUserId;
+  }
+
+
   // Clear all stored tokens
   static Future<void> clearTokens() async {
     await _secure.delete(key: _accessTokenKey);
     await _secure.delete(key: _refreshTokenKey);
     _cachedAccess = null;
     _cachedRefresh = null;
+    clearUserId(); // Also clear user ID when clearing tokens
+  }
+  // Clear user ID
+  static Future<void> clearUserId() async {
+    await _secure.delete(key: user_id);
+    _cachedUserId = null;
   }
 
   // check if user is authenticated
