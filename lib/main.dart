@@ -139,7 +139,6 @@ class AppTheme {
 
 // App Fonts Configuration
 class AppFonts {
-  // TODO: Add custom fonts to pubspec.yaml and update these
   static const String primaryFont = 'Inter'; // Replace with your font
   static const String secondaryFont = 'Roboto'; // Replace with your font
 

@@ -99,13 +99,9 @@ class AuthService {
           throw Exception('Request timeout');
         },
       );
-      
-      debugPrint("Auth status response: ${response.statusCode}");
-      debugPrint("Response body: ${response.body}");
-      
+            
       if (response.statusCode == 200) {
         final Map<String, dynamic> result = jsonDecode(response.body);
-        debugPrint("Successfully parsed auth status: $result");
         return result;
       } else if (response.statusCode == 401) {
         debugPrint("Token expired, attempting refresh...");
@@ -163,9 +159,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh': refreshToken}),
       );
-      debugPrint(
-        "Refresh token response: ${response.statusCode} ${response.body}",
-      );
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final newAccessToken = data['access'] as String? ?? '';
