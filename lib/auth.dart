@@ -225,7 +225,7 @@ class AuthService {
           body: body != null ? jsonEncode(body) : null,
         );
         break;
-      case 'PaTCH':
+      case 'PATCH':
         response = await http.patch(
           uri,
           headers: requestHeaders,

@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:casharoo/backend_config.dart';
+import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
 import 'package:casharoo/toast_builder.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 class ForgotPasswordEmailPage extends StatefulWidget {
@@ -15,6 +15,7 @@ class ForgotPasswordEmailPage extends StatefulWidget {
 
 class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
   static const double _maxContentWidth = 440;
+  final String operationPurpose = "RESET_PASS";
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -71,9 +72,9 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
     setState(() => _isLoading = false);
 
     if (result.$1) {
-      // Navigator.of(context).push(
-      //   MaterialPageRoute(builder: (_) => ForgotPasswordCodePage(email: email)),
-      // );
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => VerificationCodePage(email: email,operationPurpose: operationPurpose,)),
+      );
       AppToast.show(context, message: result.$2, type: AppToastType.success);
     } else {
       AppToast.show(context, message: result.$2, type: AppToastType.error);
