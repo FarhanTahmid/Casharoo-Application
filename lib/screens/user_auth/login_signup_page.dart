@@ -11,6 +11,7 @@ import 'package:casharoo/toast_builder.dart';
 import 'package:casharoo/backend_config.dart';
 import 'package:casharoo/helpers.dart';
 import 'package:casharoo/auth.dart';
+import 'package:casharoo/screens/user_auth/forgot_password_email_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -108,26 +109,32 @@ class _LoginPageState extends State<LoginPage>
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
       });
-      try{
+      try {
         final response = await http
-          .post(
-            uri,
-            headers: const {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: body,
-          )
-          .timeout(const Duration(seconds: 15));
+            .post(
+              uri,
+              headers: const {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: body,
+            )
+            .timeout(const Duration(seconds: 15));
 
-        if(response.statusCode==200){
-          
+        if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
-          
-          await AuthService.storeTokens(data['tokens']['access'], data['tokens']['refresh']);
+
+          await AuthService.storeTokens(
+            data['tokens']['access'],
+            data['tokens']['refresh'],
+          );
           await AuthService.storeUserId(data['user']['id'].toString());
 
-          AppToast.show(context, message: data['message'] ?? 'Login successful', type: AppToastType.success);
+          AppToast.show(
+            context,
+            message: data['message'] ?? 'Login successful',
+            type: AppToastType.success,
+          );
 
           // TODO: Navigate to home screen or onboarding page depending on user state
           _navigateToPage(const PlaceholderPage(title: "Home Page"));
@@ -138,26 +145,35 @@ class _LoginPageState extends State<LoginPage>
             _isLoading = false;
             _errorMessage = null;
           });
-        }else{
+        } else {
           setState(() {
             _isLoading = false;
             _errorMessage = 'Invalid email or password';
           });
-          _errorMessage = HelperFunctions.extractDjangoError(response.body) ?? 'Invalid email or password';
+          _errorMessage =
+              HelperFunctions.extractDjangoError(response.body) ??
+              'Invalid email or password';
           if (!mounted) return;
-          await AppToast.show(context, message: _errorMessage!, type: AppToastType.error);
+          await AppToast.show(
+            context,
+            message: _errorMessage!,
+            type: AppToastType.error,
+          );
         }
-      }catch (e) {
+      } catch (e) {
         debugPrint("Error during login: $e");
         if (!mounted) return;
         setState(() {
           _isLoading = false;
           _errorMessage = 'An unexpected error occurred! Please try again.';
         });
-        await AppToast.show(context, message: _errorMessage!, type: AppToastType.error);
+        await AppToast.show(
+          context,
+          message: _errorMessage!,
+          type: AppToastType.error,
+        );
         return;
       }
-      
     }
   }
 
@@ -169,7 +185,10 @@ class _LoginPageState extends State<LoginPage>
   }
 
   void _handleForgotPassword() {
-    debugPrint("Forgot password tapped");
+    Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (context)=>ForgotPasswordEmailPage())
+    );
   }
 
   String? _validateStrongPassword(String? value) {
@@ -278,7 +297,6 @@ class _LoginPageState extends State<LoginPage>
 
   void _handleSignUp() {
     _tabController.animateTo(1);
-
   }
 
   @override
