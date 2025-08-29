@@ -1,22 +1,21 @@
+import 'dart:convert';
+
+import 'package:casharoo/backend_config.dart';
+import 'package:casharoo/screens/user_auth/login_signup_page.dart';
+import 'package:casharoo/toast_builder.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' as http;
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
   final String code;
-  const ResetPasswordPage({
-    super.key,
-    required this.email,
-    required this.code,
-  });
+  const ResetPasswordPage({super.key, required this.email, required this.code});
 
   @override
-  State<ResetPasswordPage> createState() =>
-      _ResetPasswordPageState();
+  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPasswordPageState
-    extends State<ResetPasswordPage> {
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
   static const double _maxContentWidth = 440;
   final _formKey = GlobalKey<FormState>();
   final _pwController = TextEditingController();
@@ -31,16 +30,44 @@ class _ResetPasswordPageState
     super.dispose();
   }
 
-  Future<bool> _updatePassword(String email, String code, String password) async {
-    // TODO: update password using backend
+  Future<(bool, String)> _updatePassword(
+    String email,
+    String code,
+    String password,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 900));
-    return true; // return false on failure
+    final Uri uri = BackendConfig.endpoint(
+      'app_users/forgot-password/reset-password/',
+    );
+    final body = jsonEncode({'email': email, 'password': password});
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 15));
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        String message = data['message'];
+        return (true, message);
+      }
+      String message = data['error'];
+      return (false, message);
+    } catch (e) {
+      return (false, "Something went wrong! Please try again later");
+    }
   }
 
   Future<void> _handleUpdate() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    final ok = await _updatePassword(
+    final result = await _updatePassword(
       widget.email,
       widget.code,
       _pwController.text,
@@ -48,14 +75,14 @@ class _ResetPasswordPageState
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (ok) {
-      // Navigator.of(context).pushAndRemoveUntil(
-      //   MaterialPageRoute(builder: (_) => const ForgotPasswordSuccessPage()),
-      //   (route) => route.isFirst,
-      // );
+    if (result.$1) {
+      AppToast.show(context, message: result.$2, type: AppToastType.success);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => route.isFirst,
+      );
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not update password')));
+      AppToast.show(context, message: result.$2, type: AppToastType.error);
     }
   }
 
@@ -65,7 +92,7 @@ class _ResetPasswordPageState
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
 
-    final isValid = () => (_formKey.currentState?.validate() ?? false);
+    isValid() => (_formKey.currentState?.validate() ?? false);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -86,7 +113,7 @@ class _ResetPasswordPageState
         elevation: 0,
       ),
       body: LayoutBuilder(
-        builder: (_, __) => Center(
+        builder: (_, _) => Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _maxContentWidth),
             child: SingleChildScrollView(
@@ -96,8 +123,12 @@ class _ResetPasswordPageState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Set a new password',
-                        style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      'Set a new password',
+                      style: tt.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Create a new password. Ensure it differs from previous ones for security',
@@ -105,8 +136,12 @@ class _ResetPasswordPageState
                     ),
                     const SizedBox(height: 24),
 
-                    Text('Password',
-                        style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Password',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _pwController,
@@ -127,13 +162,18 @@ class _ResetPasswordPageState
                           borderSide: BorderSide(color: cs.primary, width: 1.6),
                         ),
                         suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure1 = !_obscure1),
-                          icon: Icon(_obscure1
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined),
+                          onPressed: () =>
+                              setState(() => _obscure1 = !_obscure1),
+                          icon: Icon(
+                            _obscure1
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
                         ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                       ),
                       validator: (v) {
                         final s = v ?? '';
@@ -145,8 +185,12 @@ class _ResetPasswordPageState
                     ),
 
                     const SizedBox(height: 16),
-                    Text('Confirm Password',
-                        style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Confirm Password',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _confirmController,
@@ -167,18 +211,25 @@ class _ResetPasswordPageState
                           borderSide: BorderSide(color: cs.primary, width: 1.6),
                         ),
                         suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure2 = !_obscure2),
-                          icon: Icon(_obscure2
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined),
+                          onPressed: () =>
+                              setState(() => _obscure2 = !_obscure2),
+                          icon: Icon(
+                            _obscure2
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
                         ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                       ),
                       validator: (v) {
                         final s = v ?? '';
                         if (s.isEmpty) return 'Please confirm the password';
-                        if (s != _pwController.text) return 'Passwords do not match';
+                        if (s != _pwController.text) {
+                          return 'Passwords do not match';
+                        }
                         return null;
                       },
                       onChanged: (_) => setState(() {}),
@@ -189,11 +240,17 @@ class _ResetPasswordPageState
                       width: double.infinity,
                       height: 48,
                       child: FilledButton(
-                        onPressed: _isLoading || !isValid() ? null : _handleUpdate,
+                        onPressed: _isLoading || !isValid()
+                            ? null
+                            : _handleUpdate,
                         child: _isLoading
                             ? const SizedBox(
-                                height: 22, width: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.4))
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                ),
+                              )
                             : const Text('Update Password'),
                       ),
                     ),

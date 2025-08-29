@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:casharoo/auth.dart';
 import 'package:casharoo/backend_config.dart';
-import 'package:casharoo/screens/user_auth/forgot_password_email_page.dart';
 import 'package:casharoo/screens/user_auth/reset_password_page.dart';
 import 'package:casharoo/toast_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 
 class VerificationCodePage extends StatefulWidget {
