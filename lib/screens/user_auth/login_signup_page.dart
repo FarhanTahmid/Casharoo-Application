@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:casharoo/main.dart';
+import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -186,8 +187,8 @@ class _LoginPageState extends State<LoginPage>
 
   void _handleForgotPassword() {
     Navigator.push(
-      context, 
-      MaterialPageRoute(builder: (context)=>ForgotPasswordEmailPage())
+      context,
+      MaterialPageRoute(builder: (context) => ForgotPasswordEmailPage()),
     );
   }
 
@@ -247,13 +248,48 @@ class _LoginPageState extends State<LoginPage>
           access: tokens?['access'] as String?,
           refresh: tokens?['refresh'] as String?,
         );
-
-        if (!mounted) return;
-        setState(() => _isSignUpLoading = false);
-
-        // TODO: Navigate to onboarding page to register user
-        debugPrint("Account created successfully");
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+        // Navigate to Account verification
+        final Uri sendVerificationCodeUri = BackendConfig.endpoint(
+          'app_users/send-verification-code/',
+        );
+        try {
+          final http.Response response = await AuthService.authenticatedRequest(
+            'get',
+            sendVerificationCodeUri,
+          );
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          if (response.statusCode == 200) {
+            String message = data['message'];
+            AppToast.show(
+              context,
+              message: message,
+              type: AppToastType.success,
+            );
+            if (!mounted) return;
+            setState(() {
+              _isSignUpLoading = false;
+            });
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => VerificationCodePage(
+                  email: _signUpEmailController.text.trim(),
+                  operationPurpose: "VERIFICATION",
+                ),
+              ),
+            );
+          } else {
+            String message = data['message'];
+            AppToast.show(context, message: message, type: AppToastType.error);
+          }
+        } catch (e) {
+          debugPrint("Error during sending email: $e");
+          AppToast.show(
+            context,
+            message:
+                "Account was created but error verifying user! Please try again later.",
+            type: AppToastType.error,
+          );
+        }
         return;
       }
 

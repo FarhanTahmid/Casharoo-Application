@@ -103,14 +103,17 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
       }
     } else if (widget.operationPurpose == "VERIFICATION") {
       final Uri uri = BackendConfig.endpoint('app_users/verify-account/');
-
+      final body = jsonEncode({'verification_code': code});
       try {
         final http.Response response = await AuthService.authenticatedRequest(
           'post',
           uri,
+          body: jsonDecode(body),
         );
 
         final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        debugPrint("Response data $data");
 
         if (response.statusCode == 200) {
           String message = data['message'];
@@ -163,42 +166,69 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
     setState(() => _resendLoading = true);
 
     await Future.delayed(const Duration(milliseconds: 800));
-
-    final Uri uri = BackendConfig.endpoint(
-      'app_users/forgot-password/send-verification-code/',
-    );
-
-    final body = jsonEncode({'email': widget.email});
-
-    String message = "";
-
-    try {
-      final response = await http
-          .post(
-            uri,
-            headers: const {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: body,
-          )
-          .timeout(const Duration(seconds: 15));
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode == 200) {
-        message = data['message'];
-        AppToast.show(context, message: message, type: AppToastType.success);
-      } else {
-        message = data['error'];
-        AppToast.show(context, message: message, type: AppToastType.error);
-      }
-    } catch (e) {
-      debugPrint("Error during sending email: $e");
-      AppToast.show(
-        context,
-        message: "Something went wrong!",
-        type: AppToastType.error,
+    if (widget.operationPurpose == "RESET_PASS") {
+      final Uri uri = BackendConfig.endpoint(
+        'app_users/forgot-password/send-verification-code/',
       );
+
+      final body = jsonEncode({'email': widget.email});
+
+      String message = "";
+
+      try {
+        final response = await http
+            .post(
+              uri,
+              headers: const {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: body,
+            )
+            .timeout(const Duration(seconds: 15));
+
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (response.statusCode == 200) {
+          message = data['message'];
+          AppToast.show(context, message: message, type: AppToastType.success);
+        } else {
+          message = data['error'];
+          AppToast.show(context, message: message, type: AppToastType.error);
+        }
+      } catch (e) {
+        debugPrint("Error during sending email: $e");
+        AppToast.show(
+          context,
+          message: "Something went wrong!",
+          type: AppToastType.error,
+        );
+      }
+    } else if (widget.operationPurpose == "VERIFICATION") {
+      String message = "";
+      final Uri sendVerificationCodeUri = BackendConfig.endpoint(
+        'app_users/send-verification-code/',
+      );
+      try {
+        final http.Response response = await AuthService.authenticatedRequest(
+          'get',
+          sendVerificationCodeUri,
+        );
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (response.statusCode == 200) {
+          message = data['message'];
+          AppToast.show(context, message: message, type: AppToastType.success);
+        } else {
+          message = data['error'];
+          AppToast.show(context, message: message, type: AppToastType.error);
+        }
+      } catch (e) {
+        debugPrint("Error during sending email: $e");
+        AppToast.show(
+          context,
+          message: "Something went wrong!",
+          type: AppToastType.error,
+        );
+      }
     }
 
     if (!mounted) return;
@@ -239,6 +269,8 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
       );
     } else if (result.$1 && result.$3 == "VERIFICATION") {
       // TODO: Show verification message and redirect to Homepage
+      AppToast.show(context, message: result.$2, type: AppToastType.success);
+      
     } else {
       AppToast.show(context, message: result.$2, type: AppToastType.error);
     }

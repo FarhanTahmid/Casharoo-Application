@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:casharoo/backend_config.dart';
+import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,6 +11,7 @@ import 'package:casharoo/toast_builder.dart';
 
 // Import pages
 import 'package:casharoo/screens/user_auth/login_signup_page.dart';
+import 'package:http/http.dart' as http;
 
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
@@ -310,56 +315,106 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _performAuthCheck() async {
     // Minimum splash screen display time
     await Future.delayed(const Duration(seconds: 2));
-    
+
     bool isLoggedIn = false;
-    bool hasCompletedOnboarding = false;    
+    bool hasCompletedOnboarding = false;
+    String email = "";
     try {
       // Check authentication status
       final authStatus = await AuthService.checkAuthStatus();
-      
+
       // Check if the response contains authentication info
       if (authStatus.containsKey('isAuthenticated')) {
         if (authStatus['isAuthenticated'] == true) {
           isLoggedIn = true;
+          email = authStatus['user_data']['email'];
           // Check onboarding status from user data
           if (authStatus['user_data'] != null) {
-            hasCompletedOnboarding = authStatus['user_data']['has_completed_onboarding'] ?? false;
+            hasCompletedOnboarding =
+                authStatus['user_data']['is_verified'] ?? false;
             // Show a toast message based on onboarding status
-            await AppToast.show(context, message: "Welcome back!", type: AppToastType.success);
+            await AppToast.show(
+              context,
+              message: "Verify your Email account to continue using the application!",
+              type: AppToastType.warning,
+            );
           }
         } else {
-          print("User is not authenticated: ${authStatus['message'] ?? 'Unknown reason'}");
-          await AppToast.show(context, message: "Please log in to continue.", type: AppToastType.warning, seconds: 4);
+          print(
+            "User is not authenticated: ${authStatus['message'] ?? 'Unknown reason'}",
+          );
+          await AppToast.show(
+            context,
+            message: "Please log in to continue.",
+            type: AppToastType.warning,
+            seconds: 4,
+          );
         }
       } else {
-        print("Auth status check failed: ${authStatus['message'] ?? 'Unknown error'}");
-        await AppToast.show(context, message: "Authentication check failed.", type: AppToastType.error,seconds: 4);
+        print(
+          "Auth status check failed: ${authStatus['message'] ?? 'Unknown error'}",
+        );
+        await AppToast.show(
+          context,
+          message: "Authentication check failed.",
+          type: AppToastType.error,
+          seconds: 4,
+        );
       }
     } catch (e) {
       // In case of error, assume not authenticated
       isLoggedIn = false;
       hasCompletedOnboarding = false;
     }
-    
+
     if (!mounted) return;
 
-    _navigateBasedOnAuthStatus(isLoggedIn, hasCompletedOnboarding);
-}
+    _navigateBasedOnAuthStatus(isLoggedIn, hasCompletedOnboarding, email);
+  }
 
-  void _navigateBasedOnAuthStatus(
+  Future<void> _navigateBasedOnAuthStatus(
     bool isLoggedIn,
     bool hasCompletedOnboarding,
-  ) {
+    String email,
+  ) async {
     if (isLoggedIn && hasCompletedOnboarding) {
       // User is logged in, go to home page
       _navigateToPage(const PlaceholderPage(title: "Home Page"));
       // TODO
       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
     } else if (isLoggedIn && !hasCompletedOnboarding) {
-      // User hasn't completed onboarding, go to onboarding
-      _navigateToPage(const PlaceholderPage(title: "Onboarding Page"));
-      // TODO:
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OnboardingPage()));
+      // Send user to verification page
+      final Uri sendVerificationCodeUri = BackendConfig.endpoint(
+        'app_users/send-verification-code/',
+      );
+      try {
+        final http.Response response = await AuthService.authenticatedRequest(
+          'get',
+          sendVerificationCodeUri,
+        );
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint("Data for sending email for onboarding: $data");
+        if (response.statusCode == 200) {
+          String message = data['message'];
+          AppToast.show(context, message: message, type: AppToastType.success);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => VerificationCodePage(
+                email: email,
+                operationPurpose: "VERIFICATION",
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error during sending email: $e");
+        AppToast.show(
+          context,
+          message:
+              "Account was created but error verifying user! Please try again later.",
+          type: AppToastType.error,
+        );
+      }
     } else {
       // User needs to login
       _navigateToPage(const PlaceholderPage(title: "Login Page"));
@@ -369,6 +424,7 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
   }
+
   void _navigateToPage(Widget page) {
     Navigator.pushReplacement(
       context,

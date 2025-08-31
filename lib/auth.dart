@@ -36,7 +36,6 @@ class AuthService {
     }
   }
 
-
   // Get stored access token
   static Future<String?> getAccessToken({bool useCache = true}) async {
     if (useCache && _cachedAccess != null) return _cachedAccess;
@@ -58,7 +57,6 @@ class AuthService {
     return _cachedUserId;
   }
 
-
   // Clear all stored tokens
   static Future<void> clearTokens() async {
     await _secure.delete(key: _accessTokenKey);
@@ -67,6 +65,7 @@ class AuthService {
     _cachedRefresh = null;
     clearUserId(); // Also clear user ID when clearing tokens
   }
+
   // Clear user ID
   static Future<void> clearUserId() async {
     await _secure.delete(key: user_id);
@@ -78,28 +77,32 @@ class AuthService {
     try {
       final Uri uri = BackendConfig.endpoint('/app_users/auth-status/');
       debugPrint("Checking authentication status at: $uri");
-      
+
       final accessToken = await getAccessToken(useCache: true);
       if (accessToken == null) {
         debugPrint("No access token found");
         return {'isAuthenticated': false, 'message': 'No access token found'};
       }
-      
+
       debugPrint("Found access token, making request...");
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(
-        const Duration(seconds: 10), // Add timeout
-        onTimeout: () {
-          throw Exception('Request timeout');
-        },
-      );
-            
+
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10), // Add timeout
+            onTimeout: () {
+              throw Exception('Request timeout');
+            },
+          );
+      final body = jsonDecode(response.body);
+      debugPrint("Response from auth : $body");
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> result = jsonDecode(response.body);
         return result;
@@ -130,7 +133,8 @@ class AuthService {
       // Provide more specific error information
       String errorMessage = 'Unknown error';
       if (e.toString().contains('SocketException')) {
-        errorMessage = 'Network connection failed - check your internet connection and backend URL';
+        errorMessage =
+            'Network connection failed - check your internet connection and backend URL';
       } else if (e.toString().contains('timeout')) {
         errorMessage = 'Request timeout - backend might be unreachable';
       } else if (e.toString().contains('FormatException')) {
@@ -138,11 +142,8 @@ class AuthService {
       } else {
         errorMessage = e.toString();
       }
-      
-      return {
-        'isAuthenticated': false,
-        'message': 'Error: $errorMessage',
-      };
+
+      return {'isAuthenticated': false, 'message': 'Error: $errorMessage'};
     }
   }
 
@@ -159,7 +160,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh': refreshToken}),
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final newAccessToken = data['access'] as String? ?? '';
