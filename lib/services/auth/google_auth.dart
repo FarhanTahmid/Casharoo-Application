@@ -1,15 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:casharoo/backend_config.dart';
-import 'package:casharoo/helpers.dart';
-import 'package:casharoo/services/auth.dart';
-import 'package:casharoo/toast_builder.dart';
+import 'package:casharoo/helpers/backend_config.dart';
+import 'package:casharoo/helpers/helpers.dart';
+import 'package:casharoo/services/auth/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class GoogleAuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;

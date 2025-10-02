@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:casharoo/main.dart';
-import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
-import 'package:casharoo/services/google_auth.dart';
+import 'package:casharoo/services/auth/screens/verification_code_screen.dart';
+import 'package:casharoo/services/auth/google_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:casharoo/toast_builder.dart';
+import 'package:casharoo/helpers/toast_builder.dart';
 
-import 'package:casharoo/backend_config.dart';
-import 'package:casharoo/helpers.dart';
-import 'package:casharoo/services/auth.dart';
-import 'package:casharoo/screens/user_auth/forgot_password_email_page.dart';
+import 'package:casharoo/helpers/backend_config.dart';
+import 'package:casharoo/helpers/helpers.dart';
+import 'package:casharoo/services/auth/auth.dart';
+import 'package:casharoo/services/auth/screens/forgot_password_email_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

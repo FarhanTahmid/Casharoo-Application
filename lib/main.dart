@@ -2,17 +2,17 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-import 'package:casharoo/backend_config.dart';
-import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
+import 'package:casharoo/helpers/backend_config.dart';
+import 'package:casharoo/services/auth/screens/verification_code_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:casharoo/services/auth.dart';
-import 'package:casharoo/toast_builder.dart';
+import 'package:casharoo/services/auth/auth.dart';
+import 'package:casharoo/helpers/toast_builder.dart';
 
 // Import pages
-import 'package:casharoo/screens/user_auth/login_signup_page.dart';
+import 'package:casharoo/services/auth/screens/login_signup_page.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> main() async {

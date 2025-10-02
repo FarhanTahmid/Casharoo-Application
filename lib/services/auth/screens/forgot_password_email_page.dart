@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:casharoo/backend_config.dart';
-import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
-import 'package:casharoo/toast_builder.dart';
+import 'package:casharoo/helpers/backend_config.dart';
+import 'package:casharoo/services/auth/screens/verification_code_screen.dart';
+import 'package:casharoo/helpers/toast_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
