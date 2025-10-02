@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:casharoo/auth.dart';
+import 'package:casharoo/services/auth.dart';
 import 'package:casharoo/backend_config.dart';
 import 'package:casharoo/screens/user_auth/reset_password_page.dart';
 import 'package:casharoo/toast_builder.dart';

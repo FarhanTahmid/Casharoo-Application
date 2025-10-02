@@ -9,6 +9,7 @@ coverage/
 !**/lib/**/coverage/
 .melos_tool/
 
+firebase.json
 # Generated plugin registrants
 **/GeneratedPluginRegistrant.*
 **/generated_plugin_registrant.*

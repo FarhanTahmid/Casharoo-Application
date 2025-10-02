@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 import 'package:casharoo/backend_config.dart';
 import 'package:casharoo/screens/user_auth/verification_code_screen.dart';
@@ -6,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:casharoo/auth.dart';
+import 'package:casharoo/services/auth.dart';
 import 'package:casharoo/toast_builder.dart';
 
 // Import pages
@@ -15,6 +17,10 @@ import 'package:http/http.dart' as http;
 
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const CasharooApp());
 }
 
