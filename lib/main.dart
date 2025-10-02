@@ -325,6 +325,7 @@ class _SplashScreenState extends State<SplashScreen>
     bool isLoggedIn = false;
     bool hasCompletedOnboarding = false;
     String email = "";
+    
     try {
       // Check authentication status
       final authStatus = await AuthService.checkAuthStatus();
@@ -333,19 +334,34 @@ class _SplashScreenState extends State<SplashScreen>
       if (authStatus.containsKey('isAuthenticated')) {
         if (authStatus['isAuthenticated'] == true) {
           isLoggedIn = true;
-          email = authStatus['user_data']['email'];
-          // Check onboarding status from user data
+          
+          // Extract user data
           if (authStatus['user_data'] != null) {
-            hasCompletedOnboarding =
-                authStatus['user_data']['is_verified'] ?? false;
-            // Show a toast message based on onboarding status
+            email = authStatus['user_data']['email'] ?? "";
+            hasCompletedOnboarding = authStatus['user_data']['is_verified'] ?? false;
+            
+            // Show toast ONLY if user is NOT verified
+            if (!hasCompletedOnboarding) {
+              await AppToast.show(
+                context,
+                message: "Verify your Email account to continue using the application!",
+                type: AppToastType.warning,
+              );
+            }
+            // If verified, no toast needed - user will navigate to home
+          } else {
+            // User data is missing - treat as error
+            print("User data is missing in auth response");
+            isLoggedIn = false;
             await AppToast.show(
               context,
-              message: "Verify your Email account to continue using the application!",
-              type: AppToastType.warning,
+              message: "User data not found. Please log in again.",
+              type: AppToastType.error,
+              seconds: 4,
             );
           }
         } else {
+          // User is not authenticated
           print(
             "User is not authenticated: ${authStatus['message'] ?? 'Unknown reason'}",
           );
@@ -357,6 +373,7 @@ class _SplashScreenState extends State<SplashScreen>
           );
         }
       } else {
+        // Auth status check returned unexpected format
         print(
           "Auth status check failed: ${authStatus['message'] ?? 'Unknown error'}",
         );
@@ -369,8 +386,16 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       // In case of error, assume not authenticated
+      print("Error during auth check: $e");
       isLoggedIn = false;
       hasCompletedOnboarding = false;
+      
+      await AppToast.show(
+        context,
+        message: "Failed to verify authentication status.",
+        type: AppToastType.error,
+        seconds: 4,
+      );
     }
 
     if (!mounted) return;

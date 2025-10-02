@@ -187,6 +187,7 @@ class _LoginPageState extends State<LoginPage>
     GoogleAuthService.signInWithGoogle().then((userCredential) {
       if (userCredential != null) {
         // Successfully signed in
+        debugPrint("User signed in with Google: $userCredential");
         _navigateToPage(const PlaceholderPage(title: "Home Page"));
       }
     }).catchError((error) async {
