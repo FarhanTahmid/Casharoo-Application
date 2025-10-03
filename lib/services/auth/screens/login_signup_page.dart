@@ -14,6 +14,7 @@ import 'package:casharoo/helpers/backend_config.dart';
 import 'package:casharoo/helpers/helpers.dart';
 import 'package:casharoo/services/auth/auth.dart';
 import 'package:casharoo/services/auth/screens/forgot_password_email_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -34,6 +35,11 @@ class _LoginPageState extends State<LoginPage>
   String? _errorMessage;
 
   static const double _maxContentWidth = 440;
+
+  bool get _isAndroidOrIOS =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+     defaultTargetPlatform == TargetPlatform.iOS);
 
   // --- Sign Up state & controllers ---
   final _signUpFormKey = GlobalKey<FormState>();
@@ -686,24 +692,25 @@ class _LoginPageState extends State<LoginPage>
 
                     const SizedBox(height: 16),
 
-                    // Google for Login
-                    _buildSocialLoginButton(
-                      context: context,
-                      onPressed: _handleGoogleLogin,
-                      icon: Icons.g_mobiledata_rounded,
-                      text: "Sign in with Google",
-                      backgroundColor: theme.colorScheme.surface,
-                      textColor: theme.colorScheme.onSurface,
-                      borderColor: theme.dividerColor,
-                      leading: Image.asset(
-                        'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
-                        width: 30,
-                        height: 30,
+                    if(_isAndroidOrIOS)...[
+                      // Google for Login
+                      _buildSocialLoginButton(
+                        context: context,
+                        onPressed: _handleGoogleLogin,
+                        icon: Icons.g_mobiledata_rounded,
+                        text: "Sign in with Google",
+                        backgroundColor: theme.colorScheme.surface,
+                        textColor: theme.colorScheme.onSurface,
+                        borderColor: theme.dividerColor,
+                        leading: Image.asset(
+                          'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
+                          width: 30,
+                          height: 30,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
-
+                      const SizedBox(height: 24),
+                    ]else
                     // Sign Up link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1053,23 +1060,25 @@ class _LoginPageState extends State<LoginPage>
 
                     const SizedBox(height: 16),
 
-                    // Google for Sign Up
-                    _buildSocialLoginButton(
-                      context: context,
-                      onPressed: _handleGoogleLogin,
-                      icon: Icons.g_mobiledata_rounded,
-                      text: "Sign up with Google",
-                      backgroundColor: theme.colorScheme.surface,
-                      textColor: theme.colorScheme.onSurface,
-                      borderColor: theme.dividerColor,
-                      leading: Image.asset(
-                        'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
-                        width: 30,
-                        height: 30,
+                    if(_isAndroidOrIOS)...[
+                      // Google for Login
+                      _buildSocialLoginButton(
+                        context: context,
+                        onPressed: _handleGoogleLogin,
+                        icon: Icons.g_mobiledata_rounded,
+                        text: "Sign in with Google",
+                        backgroundColor: theme.colorScheme.surface,
+                        textColor: theme.colorScheme.onSurface,
+                        borderColor: theme.dividerColor,
+                        leading: Image.asset(
+                          'assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png',
+                          width: 30,
+                          height: 30,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                    ]else
 
                     // Back to Log in
                     Row(

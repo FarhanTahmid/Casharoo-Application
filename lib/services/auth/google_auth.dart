@@ -9,7 +9,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 class GoogleAuthService {
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   static bool isInitialize = false;
 
@@ -80,5 +79,6 @@ class GoogleAuthService {
       debugPrint('Error: $e');
       rethrow;
     }
+    return null;
   }
 }
