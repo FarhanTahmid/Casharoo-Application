@@ -23,7 +23,6 @@ class BackendConfig {
   }
 
   static String _platformDefaultBase() {
-    // Sensible defaults for local dev
     if (kIsWeb) return 'http://localhost:8000/api';
     if (Platform.isAndroid) return 'http://192.168.0.123:8000/api'; // Android emulator
     return 'http://localhost:8000/api'; // iOS simulator/macOS/Windows/Linux

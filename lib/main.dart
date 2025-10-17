@@ -13,6 +13,8 @@ import 'package:casharoo/helpers/toast_builder.dart';
 
 // Import pages
 import 'package:casharoo/services/auth/screens/login_signup_page.dart';
+import 'package:casharoo/services/homepage/screens/homepage.dart';
+
 import 'package:http/http.dart' as http;
 
 Future<void> main() async {
@@ -410,9 +412,8 @@ class _SplashScreenState extends State<SplashScreen>
   ) async {
     if (isLoggedIn && hasCompletedOnboarding) {
       // User is logged in, go to home page
-      _navigateToPage(const PlaceholderPage(title: "Home Page"));
-      // TODO
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+      // _navigateToPage(const PlaceholderPage(title: "Home Page"));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => CashbookHomePage()));
     } else if (isLoggedIn && !hasCompletedOnboarding) {
       // Send user to verification page
       final Uri sendVerificationCodeUri = BackendConfig.endpoint(
