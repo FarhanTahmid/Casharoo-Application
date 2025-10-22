@@ -1,3 +1,4 @@
+import 'package:casharoo/services/homepage/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:casharoo/services/homepage/models/cashbook.dart';
 
@@ -12,6 +13,7 @@ class _AddCashbookDialogState extends State<AddCashbookDialog> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _desc = TextEditingController();
+  final cashbookUtils = CashbookUtils();
   bool _submitting = false;
 
   @override
@@ -34,21 +36,30 @@ class _AddCashbookDialogState extends State<AddCashbookDialog> {
             children: [
               TextFormField(
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Name of the new Book'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Name of the new Book',
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _desc,
-                decoration: const InputDecoration(labelText: 'Description (optional)'),
-                minLines: 2, maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
+                minLines: 2,
+                maxLines: 3,
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _submitting ? null : () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton.icon(
           onPressed: _submitting ? null : _submit,
           icon: const Icon(Icons.save_rounded),
@@ -60,22 +71,16 @@ class _AddCashbookDialogState extends State<AddCashbookDialog> {
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(()=> _submitting = true);
+    setState(() => _submitting = true);
 
-    // Build object for API call
-    final now = DateTime.now();
-    final newCb = Cashbook(
-      id: 'temp-${now.millisecondsSinceEpoch}', // replace with backend id after POST
-      name: _name.text.trim(),
-      description: _desc.text.trim(),
-      netBalance: 0,
-      createdAt: now,
-      updatedAt: now,
+    final newCashbook = await cashbookUtils.createCashbook(
+      _name.text.trim(),
+      _desc.text.trim(),
     );
 
     // Return to caller; caller will hit API
     if (mounted) {
-      Navigator.pop(context, newCb);
+      Navigator.pop(context, newCashbook);
     }
   }
 }

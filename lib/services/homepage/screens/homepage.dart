@@ -16,15 +16,18 @@ class CashbookHomePage extends StatefulWidget {
 }
 
 class _CashbookHomePageState extends State<CashbookHomePage> {
-  final _utility = CashbookUtils(); // <-- plug your API here later
+  final _utility = CashbookUtils();
+
   List<Cashbook> _cashbooks = [];
-  List<String> _banners = [
+  final Set<String> _selectedIds = <String>{};
+  bool get _selectionMode => _selectedIds.isNotEmpty;
+
+  final List<String> _banners = const [
     'Feature Upgrades Are Coming Soon!',
     'Allow data operator to edit entries for faster corrections.',
-    'More Custom Field types: Number and Dropdown.'
+    'More Custom Field types: Number and Dropdown.',
   ];
 
-  // banners
   final PageController _bannerCtrl = PageController(viewportFraction: 0.95);
   Timer? _autoTimer;
   bool _showBanner = true;
@@ -52,10 +55,12 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
   }
 
   Future<void> _load() async {
-    // Replace with API call
-    final items = await _utility.fetchCashbooks();
+    final items = await _utility.fetchCashbooks(); // API hook
+    if (!mounted) return;
     setState(() {
       _cashbooks = _utility.sort(items, _sort);
+      // if items changed, clear invalid selections
+      _selectedIds.removeWhere((id) => !_cashbooks.any((c) => c.id == id));
     });
   }
 
@@ -78,11 +83,8 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
       context: context,
       delegate: cbsearch.CashbookSearchDelegate(data: _cashbooks),
     );
-    if (chosen != null) {
-      // Example action: open details later
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selected: ${chosen.name}')),
-      );
+    if (chosen != null && mounted) {
+      // TODO: navigate to details if you add a details page
     }
   }
 
@@ -92,15 +94,51 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
       builder: (_) => const AddCashbookDialog(),
     );
     if (created != null) {
-      // TODO: call API to create
-      await _utility.createCashbook(created);
-      await _load();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cashbook created')),
-        );
-      }
+      await _load(); // silently reload
     }
+  }
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() => _selectedIds.clear());
+  }
+
+  Future<void> _bulkDelete() async {
+    final count = _selectedIds.length;
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete selected?'),
+        content: Text('This will permanently delete $count cashbook(s).'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    // API hook (implement bulk endpoint if available)
+    await _utility.bulkDeleteCashbooks(_selectedIds.toList());
+    _clearSelection();
+    await _load(); // silent refresh
   }
 
   @override
@@ -112,31 +150,63 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+
     return AdaptiveScaffold(
       selectedIndex: 0,
       onDestinationSelected: (i) {
-        // TODO: Navigate to other tabs/pages
+        // TODO: navigate to Help/Settings
       },
       appBar: AppBar(
-        title: const Text('Cashbooks'),
+        leading: _selectionMode
+            ? IconButton(
+                tooltip: 'Cancel selection',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _clearSelection,
+              )
+            : null,
+        title: _selectionMode
+            ? Text('${_selectedIds.length} selected')
+            : const Text('Casharooo'),
         actions: [
-          IconButton(
-            tooltip: 'Sort / Filter',
-            onPressed: _openFilter,
-            icon: const Icon(Icons.filter_list_rounded),
-          ),
-          IconButton(
-            tooltip: 'Search',
-            onPressed: _openSearch,
-            icon: const Icon(Icons.search_rounded),
-          ),
+          if (!_selectionMode) ...[
+            IconButton(
+              tooltip: 'Sort / Filter',
+              onPressed: _openFilter,
+              icon: const Icon(Icons.filter_list_rounded),
+            ),
+            IconButton(
+              tooltip: 'Search',
+              onPressed: _openSearch,
+              icon: const Icon(Icons.search_rounded),
+            ),
+          ] else ...[
+            IconButton(
+              tooltip: 'Select all',
+              onPressed: () {
+                setState(
+                  () => _selectedIds
+                    ..clear()
+                    ..addAll(_cashbooks.map((e) => e.id)),
+                );
+              },
+              icon: const Icon(Icons.select_all_rounded),
+            ),
+            IconButton(
+              tooltip: 'Delete selected',
+              onPressed: _bulkDelete,
+              icon: const Icon(Icons.delete_forever_rounded),
+            ),
+          ],
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Add New Book'),
-      ),
+      floatingActionButton: _selectionMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openAddDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add New Book'),
+            ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -150,25 +220,44 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
               ),
               const SizedBox(height: 16),
             ],
-            Text('Your Books', style: Theme.of(context).textTheme.headlineMedium),
+            Text('Your Books', style: t.headlineMedium),
             const SizedBox(height: 12),
-            ..._cashbooks.map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: CashbookCard(
-                    cashbook: c,
-                    onRename: () {
-                      // TODO open rename flow
-                    },
-                    onMove: () {
-                      // TODO move to group/business
-                    },
-                    onDelete: () async {
-                      // TODO delete via API
-                      await _utility.deleteCashbook(c.id);
-                      await _load();
-                    },
-                  ),
-                )),
+            ..._cashbooks.map((c) {
+              final selected = _selectedIds.contains(c.id);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: CashbookCard(
+                  cashbook: c,
+                  // Selection-specific flags & callbacks:
+                  selectionMode: _selectionMode,
+                  selected: selected,
+                  onCardTap: () {
+                    if (_selectionMode) {
+                      _toggleSelect(c.id);
+                    } else {
+                      // TODO: open details
+                    }
+                  },
+                  onCardLongPress: () {
+                    if (!_selectionMode) {
+                      setState(() => _selectedIds.add(c.id));
+                    } else {
+                      _toggleSelect(c.id);
+                    }
+                  },
+                  // Keep single-delete path inside each card (with its own confirmation).
+                  onDelete: () async {
+                    await _load();
+                  },
+                  onRename: () async {
+                    await _load();
+                  },
+                  onMove: () {
+                    /* optional */
+                  },
+                ),
+              );
+            }),
             const SizedBox(height: 48),
           ],
         ),
@@ -204,19 +293,28 @@ class _BannerCarousel extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [cs.secondary.withOpacity(.18), cs.tertiary.withOpacity(.18)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    colors: [
+                      cs.secondary.withOpacity(.18),
+                      cs.tertiary.withOpacity(.18),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.lightbulb_circle_rounded, color: cs.secondary, size: 34),
+                    Icon(
+                      Icons.lightbulb_circle_rounded,
+                      color: cs.secondary,
+                      size: 34,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         banners[i],
                         style: Theme.of(context).textTheme.titleLarge,
-                        maxLines: 2, overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -226,7 +324,8 @@ class _BannerCarousel extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: 8, top: 8,
+          right: 8,
+          top: 8,
           child: IconButton(
             tooltip: 'Dismiss',
             icon: const Icon(Icons.close_rounded),

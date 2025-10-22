@@ -112,7 +112,6 @@ class _LoginPageState extends State<LoginPage>
 
       await Future.delayed(const Duration(seconds: 2));
       final Uri uri = BackendConfig.endpoint('/app_users/login/');
-
       final body = jsonEncode({
         'email': _emailController.text.trim(),
         'password': _passwordController.text,

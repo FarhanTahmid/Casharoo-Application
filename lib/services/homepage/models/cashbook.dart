@@ -33,4 +33,30 @@ class Cashbook {
 
   Color balanceColor(Color positive, Color negative) =>
       netBalance >= 0 ? positive : negative;
+
+  // Add this factory constructor
+  factory Cashbook.fromJson(Map<String, dynamic> json) {
+    return Cashbook(
+      id: json['id'],
+      name: json['book_name'],
+      description: json['description'],
+      netBalance: double.parse(json['balance'].toString()),
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: json['last_edited_at'] != null
+          ? DateTime.parse(json['last_edited_at'])
+          : DateTime.parse(json['created_at']),
+    );
+  }
+
+  // Optional: Add toJson for sending data
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'book_name': name,
+      'description': description,
+      'balance': netBalance,
+      'created_at': createdAt.toIso8601String(),
+      'last_edited_at': updatedAt.toIso8601String(),
+    };
+  }
 }
