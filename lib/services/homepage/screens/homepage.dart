@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:casharoo/helpers/toast_builder.dart';
+import 'package:casharoo/api_exception.dart';
+
 import '../models/cashbook.dart';
 import '../utils/utils.dart';
 import './widgets/adaptive_scaffold.dart';
@@ -21,6 +24,7 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
   List<Cashbook> _cashbooks = [];
   final Set<String> _selectedIds = <String>{};
   bool get _selectionMode => _selectedIds.isNotEmpty;
+  bool _isLoading = false;
 
   final List<String> _banners = const [
     'Feature Upgrades Are Coming Soon!',
@@ -54,14 +58,39 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
     });
   }
 
+  /// Load cashbooks with comprehensive error handling
   Future<void> _load() async {
-    final items = await _utility.fetchCashbooks(); // API hook
-    if (!mounted) return;
-    setState(() {
-      _cashbooks = _utility.sort(items, _sort);
-      // if items changed, clear invalid selections
-      _selectedIds.removeWhere((id) => !_cashbooks.any((c) => c.id == id));
-    });
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final items = await _utility.fetchCashbooks();
+      if (!mounted) return;
+
+      setState(() {
+        _cashbooks = _utility.sort(items, _sort);
+        // if items changed, clear invalid selections
+        _selectedIds.removeWhere((id) => !_cashbooks.any((c) => c.id == id));
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Show error toast based on exception type
+      await _showErrorToast(e);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      await AppToast.show(
+        context,
+        message: 'An unexpected error occurred. Please try again.',
+        type: AppToastType.error,
+        seconds: 4,
+      );
+    }
   }
 
   void _openFilter() async {
@@ -88,12 +117,21 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
     }
   }
 
+  /// Open add cashbook dialog with error handling
   Future<void> _openAddDialog() async {
     final created = await showDialog<Cashbook>(
       context: context,
       builder: (_) => const AddCashbookDialog(),
     );
+
     if (created != null) {
+      // Show success toast
+      await AppToast.show(
+        context,
+        message: 'Cashbook created successfully!',
+        type: AppToastType.success,
+        seconds: 3,
+      );
       await _load(); // silently reload
     }
   }
@@ -112,6 +150,7 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
     setState(() => _selectedIds.clear());
   }
 
+  /// Bulk delete with comprehensive error handling
   Future<void> _bulkDelete() async {
     final count = _selectedIds.length;
     final ok = await showDialog<bool>(
@@ -135,10 +174,76 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
 
     if (ok != true) return;
 
-    // API hook (implement bulk endpoint if available)
-    await _utility.bulkDeleteCashbooks(_selectedIds.toList());
-    _clearSelection();
-    await _load(); // silent refresh
+    try {
+      await _utility.bulkDeleteCashbooks(_selectedIds.toList());
+
+      if (!mounted) return;
+
+      // Show success toast
+      final message = count > 1
+          ? '$count cashbooks deleted successfully!'
+          : 'Cashbook deleted successfully!';
+
+      await AppToast.show(
+        context,
+        message: message,
+        type: AppToastType.success,
+        seconds: 3,
+      );
+
+      _clearSelection();
+      await _load(); // silent refresh
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      await _showErrorToast(e);
+    } catch (e) {
+      if (!mounted) return;
+      await AppToast.show(
+        context,
+        message: 'Failed to delete cashbooks. Please try again.',
+        type: AppToastType.error,
+        seconds: 4,
+      );
+    }
+  }
+
+  /// Helper method to show error toasts based on exception type
+  Future<void> _showErrorToast(ApiException e) async {
+    AppToastType toastType;
+    int seconds;
+
+    switch (e.type) {
+      case ApiExceptionType.network:
+        toastType = AppToastType.error;
+        seconds = 5;
+        break;
+      case ApiExceptionType.authentication:
+        toastType = AppToastType.error;
+        seconds = 5;
+        break;
+      case ApiExceptionType.permission:
+        toastType = AppToastType.warning;
+        seconds = 4;
+        break;
+      case ApiExceptionType.validation:
+        toastType = AppToastType.warning;
+        seconds = 4;
+        break;
+      case ApiExceptionType.notFound:
+        toastType = AppToastType.info;
+        seconds = 3;
+        break;
+      default:
+        toastType = AppToastType.error;
+        seconds = 4;
+    }
+
+    await AppToast.show(
+      context,
+      message: e.message,
+      type: toastType,
+      seconds: seconds,
+    );
   }
 
   @override
@@ -207,61 +312,128 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
               icon: const Icon(Icons.add),
               label: const Text('Add New Book'),
             ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-          children: [
-            if (_showBanner) ...[
-              _BannerCarousel(
-                banners: _banners,
-                controller: _bannerCtrl,
-                onClose: () => setState(() => _showBanner = false),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                children: [
+                  if (_showBanner) ...[
+                    _BannerCarousel(
+                      banners: _banners,
+                      controller: _bannerCtrl,
+                      onClose: () => setState(() => _showBanner = false),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Text('Your Books', style: t.headlineMedium),
+                  const SizedBox(height: 12),
+                  if (_cashbooks.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(48.0),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.book_outlined,
+                              size: 64,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.3),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No cashbooks yet',
+                              style: t.titleLarge?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap the button below to create your first cashbook',
+                              textAlign: TextAlign.center,
+                              style: t.bodyMedium?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ..._cashbooks.map((c) {
+                      final selected = _selectedIds.contains(c.id);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: CashbookCard(
+                          cashbook: c,
+                          // Selection-specific flags & callbacks:
+                          selectionMode: _selectionMode,
+                          selected: selected,
+                          onCardTap: () {
+                            if (_selectionMode) {
+                              _toggleSelect(c.id);
+                            } else {
+                              // TODO: open details
+                            }
+                          },
+                          onCardLongPress: () {
+                            if (!_selectionMode) {
+                              setState(() => _selectedIds.add(c.id));
+                            } else {
+                              _toggleSelect(c.id);
+                            }
+                          },
+                          // Keep single-delete path inside each card
+                          onDelete: () async {
+                            try {
+                              if (!mounted) return;
+                              await AppToast.show(
+                                context,
+                                message: 'Cashbook deleted successfully!',
+                                type: AppToastType.success,
+                                seconds: 3,
+                              );
+
+                              await _load();
+                            } on ApiException catch (e) {
+                              if (!mounted) return;
+                              await _showErrorToast(e);
+                            } catch (e) {
+                              if (!mounted) return;
+                              await AppToast.show(
+                                context,
+                                message: 'Failed to delete cashbook.',
+                                type: AppToastType.error,
+                                seconds: 4,
+                              );
+                            }
+                          },
+                          onRename: () async {
+                            // After rename dialog closes with new name
+                            await AppToast.show(
+                              context,
+                              message: 'Cashbook renamed successfully!',
+                              type: AppToastType.success,
+                              seconds: 3,
+                            );
+                            await _load();
+                          },
+                          onMove: () {
+                            /* optional */
+                          },
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 48),
+                ],
               ),
-              const SizedBox(height: 16),
-            ],
-            Text('Your Books', style: t.headlineMedium),
-            const SizedBox(height: 12),
-            ..._cashbooks.map((c) {
-              final selected = _selectedIds.contains(c.id);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: CashbookCard(
-                  cashbook: c,
-                  // Selection-specific flags & callbacks:
-                  selectionMode: _selectionMode,
-                  selected: selected,
-                  onCardTap: () {
-                    if (_selectionMode) {
-                      _toggleSelect(c.id);
-                    } else {
-                      // TODO: open details
-                    }
-                  },
-                  onCardLongPress: () {
-                    if (!_selectionMode) {
-                      setState(() => _selectedIds.add(c.id));
-                    } else {
-                      _toggleSelect(c.id);
-                    }
-                  },
-                  // Keep single-delete path inside each card (with its own confirmation).
-                  onDelete: () async {
-                    await _load();
-                  },
-                  onRename: () async {
-                    await _load();
-                  },
-                  onMove: () {
-                    /* optional */
-                  },
-                ),
-              );
-            }),
-            const SizedBox(height: 48),
-          ],
-        ),
-      ),
+            ),
     );
   }
 }
