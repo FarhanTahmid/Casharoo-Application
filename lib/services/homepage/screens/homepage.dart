@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:casharoo/helpers/toast_builder.dart';
 import 'package:casharoo/api_exception.dart';
+import 'package:casharoo/services/cashbook_operations/screens/cashbook_entries_page.dart';
 
 import '../models/cashbook.dart';
 import '../utils/utils.dart';
@@ -379,7 +380,15 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
                             if (_selectionMode) {
                               _toggleSelect(c.id);
                             } else {
-                              // TODO: open details
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CashbookEntriesPage(
+                                    cashbookId: c.id,
+                                    cashbookName: c.name,
+                                  ),
+                                ),
+                              );
                             }
                           },
                           onCardLongPress: () {
