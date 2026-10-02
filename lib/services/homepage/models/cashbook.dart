@@ -48,7 +48,6 @@ class Cashbook {
     );
   }
 
-  // Optional: Add toJson for sending data
   Map<String, dynamic> toJson() {
     return {
       'id': id,

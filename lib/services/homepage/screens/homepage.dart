@@ -380,6 +380,7 @@ class _CashbookHomePageState extends State<CashbookHomePage> {
                             if (_selectionMode) {
                               _toggleSelect(c.id);
                             } else {
+                              debugPrint("Cashbook Tapped");
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(

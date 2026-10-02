@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:casharoo/services/homepage/utils/utils.dart';
 import 'package:casharoo/services/homepage/models/cashbook.dart';
+import 'package:casharoo/api_exception.dart';
 
 class CashbookCard extends StatelessWidget {
   // Data
   final Cashbook cashbook;
 
-  // Single-item actions (provided by the page)
-  // onRename/onDelete are optional hooks to let the page silently reload after API success
-  final VoidCallback? onRename;
-  final VoidCallback? onMove;
-  final Future<void> Function()? onDelete;
+  // Single-item actions (handled by the page after API completes here)
+  final Future<void> Function()? onDelete; // page can silently reload & toast
+  final Future<void> Function()? onRename; // page can silently reload & toast
+  final VoidCallback? onMove;              // optional hook for future
 
   // Selection support (controlled by the page)
-  final bool selectionMode;          // true when bulk-select mode is ON
-  final bool selected;               // true when this card is selected
-  final VoidCallback? onCardTap;     // tap behavior (toggle selection in selection mode)
+  final bool selectionMode;      // true when bulk-select mode is ON
+  final bool selected;           // true when this card is selected
+  final VoidCallback? onCardTap; // in selection: toggle; otherwise: navigate
   final VoidCallback? onCardLongPress;
 
-  // Local helper (API utils)
-  final CashbookUtils cashbookUtils = CashbookUtils();
+  // Local helper that matches your app style (AuthService, BackendConfig, etc.)
+  final CashbookUtils _utils = CashbookUtils();
 
   CashbookCard({
     super.key,
     required this.cashbook,
+    this.onDelete,
     this.onRename,
     this.onMove,
-    this.onDelete,
     this.selectionMode = false,
     this.selected = false,
     this.onCardTap,
@@ -36,240 +36,205 @@ class CashbookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
+    final t  = Theme.of(context).textTheme;
     final balColor = cashbook.netBalance >= 0 ? cs.secondary : cs.error;
 
-    return Material(
-      color: _cardBg(cs),
-      borderRadius: BorderRadius.circular(12),
-      elevation: 0,
-      child: InkWell(
+    final borderColor = selected
+        ? cs.primary
+        : Theme.of(context).dividerColor.withOpacity(.35);
+
+    final content = Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        onTap: onCardTap ?? () {/* TODO: open details */},
-        onLongPress: onCardLongPress,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? cs.primary : _dividerColor(context),
-              width: selected ? 1.4 : 1,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Stack(
+        border: Border.all(color: borderColor, width: selected ? 1.4 : 1),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      child: Stack(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Main row content
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _leadingIcon(cs),
-                  const SizedBox(width: 12),
+              _leadingIcon(cs),
+              const SizedBox(width: 12),
 
-                  // Title + subtitle
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _singleLineText(
-                          cashbook.name,
-                          style: t.titleLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        _singleLineText(
-                          cashbook.friendlyUpdated,
-                          style: t.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Balance
-                  Text(
-                    _formatMoney(cashbook.netBalance),
-                    style: t.titleLarge!.copyWith(
-                      color: balColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Menu (disabled during selection mode)
-                  PopupMenuButton<String>(
-                    enabled: !selectionMode,
-                    onSelected: (v) async {
-                      switch (v) {
-                        case 'rename':
-                          await _renameFlow(context);
-                          break;
-                        case 'move':
-                          onMove?.call();
-                          break;
-                        case 'delete':
-                          final confirmed =
-                              await _confirmDelete(context, cashbook.name);
-                          if (confirmed == true) {
-                            try {
-                              await cashbookUtils.deleteCashbook(cashbook.id); // API call
-                              await onDelete?.call(); // page-level silent refresh
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Delete failed: $e')),
-                                );
-                              }
-                            }
-                          }
-                          break;
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: ListTile(
-                          leading: Icon(Icons.edit_rounded),
-                          title: Text('Rename'),
-                          dense: true,
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'move',
-                        child: ListTile(
-                          leading: Icon(Icons.drive_file_move_rounded),
-                          title: Text('Move book'),
-                          dense: true,
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(Icons.delete_rounded),
-                          title: Text('Delete Book'),
-                          dense: true,
-                        ),
-                      ),
-                    ],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ],
+              // Title + subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _oneLine(cashbook.name, style: t.titleLarge),
+                    const SizedBox(height: 4),
+                    _oneLine(cashbook.friendlyUpdated, style: t.bodyMedium),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
 
-              // Selection badge (top-left)
-              if (selectionMode)
-                Positioned(
-                  top: 2,
-                  left: 2,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 120),
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: selected ? cs.primary : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected ? cs.primary : _dividerColor(context),
-                        width: selected ? 0 : 1.2,
+              // Balance
+              Text(
+                _formatMoney(cashbook.netBalance),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.titleLarge!.copyWith(
+                  color: balColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+
+              // Three-dots menu: disabled while in selection mode
+              IgnorePointer(
+                ignoring: selectionMode,
+                child: PopupMenuButton<String>(
+                  onSelected: (v) async {
+                    switch (v) {
+                      case 'rename':
+                        await _handleRename(context);
+                        break;
+                      case 'move':
+                        onMove?.call();
+                        break;
+                      case 'delete':
+                        await _handleDelete(context);
+                        break;
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'rename',
+                      child: ListTile(
+                        leading: Icon(Icons.edit_rounded),
+                        title: Text('Rename'),
+                        dense: true,
                       ),
                     ),
-                    child: selected
-                        ? const Icon(Icons.check, size: 16, color: Colors.white)
-                        : null,
+                    PopupMenuItem(
+                      value: 'move',
+                      child: ListTile(
+                        leading: Icon(Icons.drive_file_move_rounded),
+                        title: Text('Move book'),
+                        dense: true,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(Icons.delete_rounded),
+                        title: Text('Delete Book'),
+                        dense: true,
+                      ),
+                    ),
+                  ],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+              ),
             ],
           ),
-        ),
+
+          // Selection tick (top-left)
+          if (selectionMode)
+            Positioned(
+              top: 2,
+              left: 2,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: selected ? cs.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? cs.primary : borderColor,
+                    width: selected ? 0 : 1.2,
+                  ),
+                ),
+                child: selected
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+            ),
+        ],
+      ),
+    );
+
+    // IMPORTANT: single InkWell wrapping the whole visual card
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onCardTap,              // page decides: toggle or navigate
+        onLongPress: onCardLongPress,  // page decides: start selection/toggle
+        child: content,
       ),
     );
   }
 
-  // ---------- Rename Flow ----------
+  // ---------------- Actions ----------------
 
-  Future<void> _renameFlow(BuildContext context) async {
-    final newName = await _showRenameDialog(context, initial: cashbook.name);
-    if (newName == null) return; // user cancelled
+  Future<void> _handleRename(BuildContext context) async {
+    final ctrl = TextEditingController(text: cashbook.name);
+
+    final newName = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename cashbook'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'Cashbook name',
+          ),
+          onSubmitted: (_) => Navigator.of(ctx).pop(ctrl.text.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName == null) return;
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty || trimmed == cashbook.name) return;
 
     try {
-      // Call API to rename
-      await cashbookUtils.updateCashbook(cashbook, newName.trim());
-      // Let the page refresh silently if it wants
-      onRename?.call();
+      // Call your API here (per your request)
+      await _utils.updateCashbook(cashbook, trimmed, null);
+      // Let the page decide UI feedback + reload
+      await onRename?.call();
+    } on ApiException catch (e) {
+      _toast(context, e.message, error: true);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Rename failed: $e')),
-        );
-      }
+      _toast(context, 'Failed to rename cashbook.', error: true);
     }
   }
 
-  Future<String?> _showRenameDialog(BuildContext context, {required String initial}) {
-    final t = Theme.of(context).textTheme;
-    final formKey = GlobalKey<FormState>();
-    final controller = TextEditingController(text: initial);
-    bool submitting = false;
+  Future<void> _handleDelete(BuildContext context) async {
+    final ok = await _confirmDelete(context, cashbook.name);
+    if (ok != true) return;
 
-    return showDialog<String?>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            return AlertDialog(
-              title: const Text('Rename Cashbook'),
-              content: Form(
-                key: formKey,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: TextFormField(
-                    controller: controller,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Cashbook name',
-                      hintText: 'Enter new name',
-                    ),
-                    style: t.titleMedium,
-                    validator: (v) {
-                      final val = v?.trim() ?? '';
-                      if (val.isEmpty) return 'Name is required';
-                      if (val.length < 2) return 'Too short';
-                      return null;
-                    },
-                    onFieldSubmitted: (_) async {
-                      if (!formKey.currentState!.validate()) return;
-                      setState(() => submitting = true);
-                      // We don’t call API here; we return the text and let _renameFlow do it.
-                      Navigator.of(ctx).pop(controller.text);
-                    },
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: submitting ? null : () => Navigator.of(ctx).pop(null),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton.icon(
-                  icon: const Icon(Icons.save_rounded),
-                  onPressed: submitting
-                      ? null
-                      : () async {
-                          if (!formKey.currentState!.validate()) return;
-                          setState(() => submitting = true);
-                          Navigator.of(ctx).pop(controller.text);
-                        },
-                  label: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+    try {
+      await _utils.deleteCashbook(cashbook.id);
+      await onDelete?.call(); // page: toast + silent reload
+    } on ApiException catch (e) {
+      _toast(context, e.message, error: true);
+    } catch (e) {
+      _toast(context, 'Failed to delete cashbook.', error: true);
+    }
   }
 
-  // ---------- UI helpers ----------
+  // ---------------- UI helpers ----------------
 
   Widget _leadingIcon(ColorScheme cs) {
     return Container(
@@ -283,7 +248,7 @@ class CashbookCard extends StatelessWidget {
     );
   }
 
-  Widget _singleLineText(String text, {TextStyle? style}) {
+  Widget _oneLine(String text, {TextStyle? style}) {
     return Text(
       text,
       maxLines: 1,
@@ -292,24 +257,6 @@ class CashbookCard extends StatelessWidget {
     );
   }
 
-  Color _cardBg(ColorScheme cs) {
-    // Slight tint when selected to align visuals
-    if (selected) {
-      return cs.surface.withOpacity(
-        ThemeData.estimateBrightnessForColor(cs.surface) == Brightness.dark
-            ? 0.9
-            : 1.0,
-      );
-    }
-    return cs.surface;
-  }
-
-  Color _dividerColor(BuildContext context) {
-    return Theme.of(context).dividerColor.withOpacity(.35);
-  }
-
-  // ---------- Delete Dialog ----------
-
   Future<bool?> _confirmDelete(BuildContext context, String name) {
     final cs = Theme.of(context).colorScheme;
     return showDialog<bool>(
@@ -317,9 +264,7 @@ class CashbookCard extends StatelessWidget {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Cashbook?'),
-        content: Text(
-          'Are you sure you want to delete "$name"? This action cannot be undone.',
-        ),
+        content: Text('Are you sure you want to delete "$name"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -339,7 +284,16 @@ class CashbookCard extends StatelessWidget {
     );
   }
 
-  // ---------- Formatting ----------
+  void _toast(BuildContext context, String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
+
+  // ---------------- Formatting ----------------
 
   String _formatMoney(double v) {
     final sign = v < 0 ? '-' : '';
@@ -347,7 +301,6 @@ class CashbookCard extends StatelessWidget {
     return '$sign${_comma(n)}';
   }
 
-  // Simple 1,234,567 style
   String _comma(String s) {
     final buf = StringBuffer();
     for (int i = 0; i < s.length; i++) {

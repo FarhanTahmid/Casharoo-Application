@@ -17,44 +17,78 @@ class BalanceCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
+  final cs = Theme.of(context).colorScheme;
+  final t  = Theme.of(context).textTheme;
 
-    return SizedBox(
-      height: 132,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: PageView(
-          controller: controller,
-          children: [
-            _card(context,
+  final double cardHeight = _computeCardHeight(context); // ← adaptive height
+
+  return SizedBox(
+    height: cardHeight,
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: PageView(
+        controller: controller,
+        physics: const ClampingScrollPhysics(),
+        children: [
+          _card(
+            context,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // no Spacer
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _row('Net Balance', _money(net), t.titleLarge, cs.onSurface),
-                  const SizedBox(height: 8),
-                  _row('Total In (+)', _money(totalIn), t.titleMedium, cs.secondary),
-                  const SizedBox(height: 4),
-                  _row('Total Out (-)', _money(totalOut), t.titleMedium, cs.error),
-                  const Spacer(),
+                  // top block (compact)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _row('Net Balance', _money(net), t.titleLarge, cs.onSurface),
+                      const SizedBox(height: 4),
+                      _row('Total In (+)', _money(totalIn), t.titleMedium, cs.secondary),
+                      const SizedBox(height: 2),
+                      _row('Total Out (-)', _money(totalOut), t.titleMedium, cs.error),
+                    ],
+                  ),
+                  // bottom button (compact)
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: onViewReports,
-                      icon: const Icon(Icons.chevron_right_rounded),
-                      label: const Text('VIEW REPORTS'),
+                    child: SizedBox(
+                      height: 15,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: onViewReports,
+                        icon: const Icon(Icons.chevron_right_rounded, size: 14),
+                        label: const Text('VIEW REPORTS'),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
-            _card(context, child: _miniBars(context)),
-            _card(context, child: _miniPie(context)),
-          ],
-        ),
+          ),
+          _card(context, child: _miniBars(context)),
+          _card(context, child: _miniPie(context)),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+/// Increase the height slightly when users bump up their system text scale.
+/// Keeps cards readable and prevents vertical overflow without scaling hacks.
+double _computeCardHeight(BuildContext context) {
+  const base = 142.0;
+  // ignore: deprecated_member_use
+  final scale = MediaQuery.textScaleFactorOf(context);
+  if (scale <= 1.0) return base;
+  // Gentle growth: add up to ~36 px at 1.8x. Tweak if you need more headroom.
+  final extra = (scale - 1.0) * 45.0;
+  return min(base + extra, 168.0);
+}
+
 
   Widget _card(BuildContext context, {required Widget child}) {
     final cs = Theme.of(context).colorScheme;

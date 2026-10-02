@@ -21,7 +21,7 @@ class EntryFormPage extends StatefulWidget {
 }
 
 class _EntryFormPageState extends State<EntryFormPage> {
-  late EntryType _type;
+  late EntryType  _type;
   DateTime _when = DateTime.now();
   final _amountCtrl = TextEditingController();
   double? _calcPreview;

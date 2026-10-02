@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'package:casharoo/services/cashbook_operations/models/entry_api_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:casharoo/services/cashbook_operations/models/api_repository.dart';
-import 'package:casharoo/services/cashbook_operations/models/mock_repository.dart';
+// import 'package:casharoo/services/cashbook_operations/models/mock_repository.dart';
 import 'package:casharoo/services/cashbook_operations/data/entry.dart';
 import 'package:casharoo/services/cashbook_operations/models/filters.dart';
 import 'package:casharoo/services/reports/screens/reports_page.dart';
@@ -27,7 +28,7 @@ class CashbookEntriesPage extends StatefulWidget {
 }
 
 class _CashbookEntriesPageState extends State<CashbookEntriesPage> {
-  final EntryRepository repo = MockEntryRepository(); // swap to real impl later
+  final EntryRepository repo = EntryApiRepository();
   final TextEditingController _searchCtrl = TextEditingController();
   EntryFilters filters = EntryFilters();
 
