@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:casharoo/app.dart';
-import 'package:casharoo/core/api/api_client.dart';
-import 'package:casharoo/core/db/database.dart';
-import 'package:casharoo/core/providers.dart';
+import 'package:spendroo/app.dart';
+import 'package:spendroo/core/api/api_client.dart';
+import 'package:spendroo/core/db/database.dart';
+import 'package:spendroo/core/providers.dart';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +19,7 @@ const cashAccountId = '00000000-0000-0000-0000-0000000000a1';
 const shopId = '00000000-0000-0000-0000-000000000002';
 const shopBookId = '00000000-0000-0000-0000-0000000000b1';
 
-/// A small stand-in for the Casharoo API: enough for login, workspaces and sync.
+/// A small stand-in for the Spendroo API: enough for login, workspaces and sync.
 class FakeServer {
   FakeServer({this.onboardedAt});
 
@@ -160,7 +160,7 @@ class Harness {
   }
 
   Future<void> start() async {
-    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const CasharooApp()));
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const SpendrooApp()));
     await settle();
   }
 
@@ -202,7 +202,7 @@ void main() {
     final app = Harness(tester, FakeServer(onboardedAt: '2026-10-01T00:00:00Z'));
     await app.start();
     await app.logIn();
-    expect(find.text('How will you use Casharoo?'), findsNothing);
+    expect(find.text('How will you use Spendroo?'), findsNothing);
     expect(find.text('Total balance'), findsOneWidget);
 
     // A test build can be pointed at another server; that signs out and clears the phone
@@ -278,7 +278,7 @@ void main() {
     await settle();
 
     // --- first run: onboarding question
-    expect(find.text('How will you use Casharoo?'), findsOneWidget);
+    expect(find.text('How will you use Spendroo?'), findsOneWidget);
     await tester.tap(find.text('For myself'));
     await settle();
 

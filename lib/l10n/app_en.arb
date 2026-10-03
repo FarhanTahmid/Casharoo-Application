@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "Casharoo",
+  "appName": "Spendroo",
 
   "email": "Email",
   "password": "Password",
@@ -29,7 +29,7 @@
   "passwordChanged": "Password changed. Log in with the new one.",
   "offlineError": "No connection. Try again when you are online.",
 
-  "welcomeTitle": "How will you use Casharoo?",
+  "welcomeTitle": "How will you use Spendroo?",
   "forMyself": "For myself",
   "forMyselfHint": "Track accounts, spending and budgets.",
   "forMyBusiness": "For my business",
@@ -180,7 +180,7 @@
   "newThisMonth": "New this month",
   "accountBalances": "Account balances",
   "server": "Server",
-  "serverHint": "Address of the Casharoo API this test build talks to.",
+  "serverHint": "Address of the Spendroo API this test build talks to.",
   "serverChangeConfirm": "Switch server? You will be logged out and data on this device is removed.",
   "serverInvalid": "Enter an address starting with http:// or https://",
   "resetToDefault": "Reset to default",

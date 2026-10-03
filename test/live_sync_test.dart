@@ -1,4 +1,4 @@
-// End-to-end sync against a running Casharoo API. Skipped unless LIVE_API_URL,
+// End-to-end sync against a running Spendroo API. Skipped unless LIVE_API_URL,
 // LIVE_EMAIL and LIVE_PASSWORD are set (a verified account on that server):
 //
 //   flutter test test/live_sync_test.dart
@@ -7,13 +7,13 @@ library;
 
 import 'dart:io';
 
-import 'package:casharoo/core/api/api_client.dart';
-import 'package:casharoo/core/auth/auth_repository.dart';
-import 'package:casharoo/core/db/database.dart';
-import 'package:casharoo/core/db/local_store.dart';
-import 'package:casharoo/core/sync/sync_engine.dart';
-import 'package:casharoo/features/cashbook/cashbook_repository.dart';
-import 'package:casharoo/features/personal/ledger_repository.dart';
+import 'package:spendroo/core/api/api_client.dart';
+import 'package:spendroo/core/auth/auth_repository.dart';
+import 'package:spendroo/core/db/database.dart';
+import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/core/sync/sync_engine.dart';
+import 'package:spendroo/features/cashbook/cashbook_repository.dart';
+import 'package:spendroo/features/personal/ledger_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'test_support.dart';

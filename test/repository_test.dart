@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:casharoo/core/db/database.dart';
-import 'package:casharoo/core/db/local_store.dart';
-import 'package:casharoo/features/cashbook/cashbook_repository.dart';
-import 'package:casharoo/features/personal/ledger_repository.dart';
+import 'package:spendroo/core/db/database.dart';
+import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/features/cashbook/cashbook_repository.dart';
+import 'package:spendroo/features/personal/ledger_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'test_support.dart';

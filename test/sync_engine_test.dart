@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:casharoo/core/api/api_client.dart';
-import 'package:casharoo/core/db/database.dart';
-import 'package:casharoo/core/db/local_store.dart';
-import 'package:casharoo/core/sync/sync_engine.dart';
-import 'package:casharoo/features/cashbook/cashbook_repository.dart';
-import 'package:casharoo/features/personal/ledger_repository.dart';
+import 'package:spendroo/core/api/api_client.dart';
+import 'package:spendroo/core/db/database.dart';
+import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/core/sync/sync_engine.dart';
+import 'package:spendroo/features/cashbook/cashbook_repository.dart';
+import 'package:spendroo/features/personal/ledger_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

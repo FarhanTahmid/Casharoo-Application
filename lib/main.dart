@@ -15,6 +15,6 @@ Future<void> main() async {
       databaseProvider.overrideWithValue(db),
       serverUrlProvider.overrideWith(() => ServerUrlController(server)),
     ],
-    child: const CasharooApp(),
+    child: const SpendrooApp(),
   ));
 }

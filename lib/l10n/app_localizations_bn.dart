@@ -9,7 +9,7 @@ class AppLocalizationsBn extends AppLocalizations {
   AppLocalizationsBn([String locale = 'bn']) : super(locale);
 
   @override
-  String get appName => 'ক্যাশারু';
+  String get appName => 'স্পেন্ড্রু';
 
   @override
   String get email => 'ইমেইল';
@@ -91,7 +91,7 @@ class AppLocalizationsBn extends AppLocalizations {
       'ইন্টারনেট সংযোগ নেই। অনলাইনে এসে আবার চেষ্টা করুন।';
 
   @override
-  String get welcomeTitle => 'ক্যাশারু কীভাবে ব্যবহার করবেন?';
+  String get welcomeTitle => 'স্পেন্ড্রু কীভাবে ব্যবহার করবেন?';
 
   @override
   String get forMyself => 'নিজের জন্য';
@@ -538,7 +538,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get serverHint =>
-      'এই টেস্ট বিল্ড যে ক্যাশারু সার্ভারের সাথে কথা বলে তার ঠিকানা।';
+      'এই টেস্ট বিল্ড যে স্পেন্ড্রু সার্ভারের সাথে কথা বলে তার ঠিকানা।';
 
   @override
   String get serverChangeConfirm =>

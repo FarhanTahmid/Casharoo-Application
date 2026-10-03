@@ -9,7 +9,7 @@
 | `prod` | `<id>` | `config/prod.json` | production (HTTPS) | Play Store |
 
 `<id>` is `baseApplicationId` in `android/app/build.gradle.kts`, currently the
-placeholder `com.example.casharoo`.
+placeholder `com.example.spendroo`.
 
 Dev and staging builds show **Settings → Server**, where a tester can point the
 app at another API (for example a Cloudflare tunnel to a developer's machine).
@@ -55,7 +55,7 @@ one. The version name comes from `version:` in `pubspec.yaml`.
 
 Play never allows the ID to change after the first upload, even to a test track.
 
-1. Choose the ID (reverse domain you control, e.g. `com.casharoo.app`).
+1. Choose the ID (reverse domain you control, e.g. `com.spendroo.app`).
 2. `python tool/set_app_id.py <id>` — updates `baseApplicationId`, `namespace`,
    the Kotlin package of `MainActivity.kt` and the iOS bundle IDs.
 3. `flutter clean`, rebuild, run the app.

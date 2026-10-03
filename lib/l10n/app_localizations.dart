@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'Casharoo'**
+  /// **'Spendroo'**
   String get appName;
 
   /// No description provided for @email.
@@ -257,7 +257,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'How will you use Casharoo?'**
+  /// **'How will you use Spendroo?'**
   String get welcomeTitle;
 
   /// No description provided for @forMyself.
@@ -1055,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverHint.
   ///
   /// In en, this message translates to:
-  /// **'Address of the Casharoo API this test build talks to.'**
+  /// **'Address of the Spendroo API this test build talks to.'**
   String get serverHint;
 
   /// No description provided for @serverChangeConfirm.

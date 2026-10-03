@@ -1,4 +1,4 @@
-import 'package:casharoo/core/money.dart';
+import 'package:spendroo/core/money.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,5 +1,5 @@
-name: casharoo
-description: "Casharoo: personal money tracker and business cashbook."
+name: spendroo
+description: "Spendroo: personal money tracker and business cashbook."
 publish_to: 'none'
 
 version: 1.0.0+1

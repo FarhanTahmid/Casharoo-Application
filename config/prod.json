@@ -1,6 +1,6 @@
 {
   "FLAVOR": "prod",
-  "API_URL": "https://api.casharoo.example",
+  "API_URL": "https://api.spendroo.example",
   "GOOGLE_SERVER_CLIENT_ID": "",
   "FEEDBACK_EMAIL": ""
 }

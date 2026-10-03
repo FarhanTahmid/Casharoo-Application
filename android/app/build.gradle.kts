@@ -18,10 +18,10 @@ plugins {
 
 // The one place the app ID lives. Flavours add a suffix so dev, staging and
 // prod can sit side by side on one phone. Change before the first Play upload.
-val baseApplicationId = "com.example.casharoo"
+val baseApplicationId = "com.example.spendroo"
 
 android {
-    namespace = "com.example.casharoo"
+    namespace = "com.example.spendroo"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
@@ -50,17 +50,17 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "Casharoo Dev")
+            resValue("string", "app_name", "Spendroo Dev")
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".stg"
             versionNameSuffix = "-stg"
-            resValue("string", "app_name", "Casharoo Staging")
+            resValue("string", "app_name", "Spendroo Staging")
         }
         create("prod") {
             dimension = "environment"
-            resValue("string", "app_name", "Casharoo")
+            resValue("string", "app_name", "Spendroo")
         }
     }
 

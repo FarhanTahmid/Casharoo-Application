@@ -1,7 +1,7 @@
 """
 Switch the app to its final application ID, e.g.:
 
-    python tool/set_app_id.py com.casharoo.app
+    python tool/set_app_id.py com.spendroo.app
 
 Changes the Android application ID and namespace (android/app/build.gradle.kts),
 moves MainActivity.kt to the matching Kotlin package, and sets the iOS bundle

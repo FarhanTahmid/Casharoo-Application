@@ -164,7 +164,7 @@ class Settings extends Table {
   Accounts, Categories, Transactions, Budgets, Outbox, SyncCursors, SyncFailures, Settings,
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'casharoo'));
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'spendroo'));
 
   // Every change: bump this, run `dart run drift_dev make-migrations`, add the
   // step below. The generated tests in test/drift/ check each step.

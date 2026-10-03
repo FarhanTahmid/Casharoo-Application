@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Casharoo';
+  String get appName => 'Spendroo';
 
   @override
   String get email => 'Email';
@@ -90,7 +90,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineError => 'No connection. Try again when you are online.';
 
   @override
-  String get welcomeTitle => 'How will you use Casharoo?';
+  String get welcomeTitle => 'How will you use Spendroo?';
 
   @override
   String get forMyself => 'For myself';
@@ -541,7 +541,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverHint =>
-      'Address of the Casharoo API this test build talks to.';
+      'Address of the Spendroo API this test build talks to.';
 
   @override
   String get serverChangeConfirm =>

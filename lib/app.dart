@@ -71,8 +71,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class CasharooApp extends ConsumerWidget {
-  const CasharooApp({super.key});
+class SpendrooApp extends ConsumerWidget {
+  const SpendrooApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

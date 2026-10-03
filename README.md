@@ -1,4 +1,4 @@
-# Casharoo app
+# Spendroo app
 
 Flutter app for Android (iOS later). Offline first: everything is written to a
 local SQLite database (Drift) and synced with the API in the background.
@@ -15,7 +15,7 @@ local SQLite database (Drift) and synced with the API in the background.
 
 ## Run
 
-Three flavours, each installable side by side: `dev` (`com.example.casharoo.dev`),
+Three flavours, each installable side by side: `dev` (`com.example.spendroo.dev`),
 `staging` (`.stg`) and `prod`. Pair the flavour with its config file:
 
 ```

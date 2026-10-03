@@ -2,21 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Casharoo (dev)",
+      "name": "Spendroo (dev)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
       "args": ["--flavor", "dev", "--dart-define-from-file=config/dev.json"]
     },
     {
-      "name": "Casharoo (staging)",
+      "name": "Spendroo (staging)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
       "args": ["--flavor", "staging", "--dart-define-from-file=config/staging.json"]
     },
     {
-      "name": "Casharoo (prod, release)",
+      "name": "Spendroo (prod, release)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",
