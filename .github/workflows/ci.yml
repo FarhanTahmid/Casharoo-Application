@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.8"
+          channel: stable
+          cache: true
+
+      # Host SQLite for the Drift tests
+      - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - run: flutter pub get
+
+      - name: Generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+          git diff --exit-code -- lib/
+
+      - run: flutter analyze
+
+      - run: flutter test
+
+      # No key.properties here: the debug build uses the default debug key
+      - name: Build dev APK
+        run: flutter build apk --debug --flavor dev --dart-define-from-file=config/dev.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: casharoo-dev-debug-apk
+          path: build/app/outputs/flutter-apk/app-dev-debug.apk
+          retention-days: 14

@@ -6175,6 +6175,15 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _monthMeta = const VerificationMeta('month');
+  @override
+  late final GeneratedColumn<String> month = GeneratedColumn<String>(
+    'month',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6187,6 +6196,7 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     categoryId,
     amountMinor,
     currency,
+    month,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6277,6 +6287,12 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     } else if (isInserting) {
       context.missing(_currencyMeta);
     }
+    if (data.containsKey('month')) {
+      context.handle(
+        _monthMeta,
+        month.isAcceptableOrUnknown(data['month']!, _monthMeta),
+      );
+    }
     return context;
   }
 
@@ -6326,6 +6342,10 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
       )!,
+      month: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}month'],
+      ),
     );
   }
 
@@ -6346,6 +6366,7 @@ class Budget extends DataClass implements Insertable<Budget> {
   final String categoryId;
   final int amountMinor;
   final String currency;
+  final String? month;
   const Budget({
     required this.id,
     required this.workspaceId,
@@ -6357,6 +6378,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     required this.categoryId,
     required this.amountMinor,
     required this.currency,
+    this.month,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6373,6 +6395,9 @@ class Budget extends DataClass implements Insertable<Budget> {
     map['category_id'] = Variable<String>(categoryId);
     map['amount_minor'] = Variable<int>(amountMinor);
     map['currency'] = Variable<String>(currency);
+    if (!nullToAbsent || month != null) {
+      map['month'] = Variable<String>(month);
+    }
     return map;
   }
 
@@ -6390,6 +6415,9 @@ class Budget extends DataClass implements Insertable<Budget> {
       categoryId: Value(categoryId),
       amountMinor: Value(amountMinor),
       currency: Value(currency),
+      month: month == null && nullToAbsent
+          ? const Value.absent()
+          : Value(month),
     );
   }
 
@@ -6409,6 +6437,7 @@ class Budget extends DataClass implements Insertable<Budget> {
       categoryId: serializer.fromJson<String>(json['categoryId']),
       amountMinor: serializer.fromJson<int>(json['amountMinor']),
       currency: serializer.fromJson<String>(json['currency']),
+      month: serializer.fromJson<String?>(json['month']),
     );
   }
   @override
@@ -6425,6 +6454,7 @@ class Budget extends DataClass implements Insertable<Budget> {
       'categoryId': serializer.toJson<String>(categoryId),
       'amountMinor': serializer.toJson<int>(amountMinor),
       'currency': serializer.toJson<String>(currency),
+      'month': serializer.toJson<String?>(month),
     };
   }
 
@@ -6439,6 +6469,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     String? categoryId,
     int? amountMinor,
     String? currency,
+    Value<String?> month = const Value.absent(),
   }) => Budget(
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
@@ -6450,6 +6481,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     categoryId: categoryId ?? this.categoryId,
     amountMinor: amountMinor ?? this.amountMinor,
     currency: currency ?? this.currency,
+    month: month.present ? month.value : this.month,
   );
   Budget copyWithCompanion(BudgetsCompanion data) {
     return Budget(
@@ -6469,6 +6501,7 @@ class Budget extends DataClass implements Insertable<Budget> {
           ? data.amountMinor.value
           : this.amountMinor,
       currency: data.currency.present ? data.currency.value : this.currency,
+      month: data.month.present ? data.month.value : this.month,
     );
   }
 
@@ -6484,7 +6517,8 @@ class Budget extends DataClass implements Insertable<Budget> {
           ..write('deletedAt: $deletedAt, ')
           ..write('categoryId: $categoryId, ')
           ..write('amountMinor: $amountMinor, ')
-          ..write('currency: $currency')
+          ..write('currency: $currency, ')
+          ..write('month: $month')
           ..write(')'))
         .toString();
   }
@@ -6501,6 +6535,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     categoryId,
     amountMinor,
     currency,
+    month,
   );
   @override
   bool operator ==(Object other) =>
@@ -6515,7 +6550,8 @@ class Budget extends DataClass implements Insertable<Budget> {
           other.deletedAt == this.deletedAt &&
           other.categoryId == this.categoryId &&
           other.amountMinor == this.amountMinor &&
-          other.currency == this.currency);
+          other.currency == this.currency &&
+          other.month == this.month);
 }
 
 class BudgetsCompanion extends UpdateCompanion<Budget> {
@@ -6529,6 +6565,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   final Value<String> categoryId;
   final Value<int> amountMinor;
   final Value<String> currency;
+  final Value<String?> month;
   final Value<int> rowid;
   const BudgetsCompanion({
     this.id = const Value.absent(),
@@ -6541,6 +6578,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     this.categoryId = const Value.absent(),
     this.amountMinor = const Value.absent(),
     this.currency = const Value.absent(),
+    this.month = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BudgetsCompanion.insert({
@@ -6554,6 +6592,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     required String categoryId,
     required int amountMinor,
     required String currency,
+    this.month = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workspaceId = Value(workspaceId),
@@ -6573,6 +6612,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     Expression<String>? categoryId,
     Expression<int>? amountMinor,
     Expression<String>? currency,
+    Expression<String>? month,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6586,6 +6626,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
       if (categoryId != null) 'category_id': categoryId,
       if (amountMinor != null) 'amount_minor': amountMinor,
       if (currency != null) 'currency': currency,
+      if (month != null) 'month': month,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6601,6 +6642,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     Value<String>? categoryId,
     Value<int>? amountMinor,
     Value<String>? currency,
+    Value<String?>? month,
     Value<int>? rowid,
   }) {
     return BudgetsCompanion(
@@ -6614,6 +6656,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
       categoryId: categoryId ?? this.categoryId,
       amountMinor: amountMinor ?? this.amountMinor,
       currency: currency ?? this.currency,
+      month: month ?? this.month,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6651,6 +6694,9 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
     }
+    if (month.present) {
+      map['month'] = Variable<String>(month.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6670,6 +6716,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
           ..write('categoryId: $categoryId, ')
           ..write('amountMinor: $amountMinor, ')
           ..write('currency: $currency, ')
+          ..write('month: $month, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10912,6 +10959,7 @@ typedef $$BudgetsTableCreateCompanionBuilder =
       required String categoryId,
       required int amountMinor,
       required String currency,
+      Value<String?> month,
       Value<int> rowid,
     });
 typedef $$BudgetsTableUpdateCompanionBuilder =
@@ -10926,6 +10974,7 @@ typedef $$BudgetsTableUpdateCompanionBuilder =
       Value<String> categoryId,
       Value<int> amountMinor,
       Value<String> currency,
+      Value<String?> month,
       Value<int> rowid,
     });
 
@@ -10985,6 +11034,11 @@ class $$BudgetsTableFilterComposer
 
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get month => $composableBuilder(
+    column: $table.month,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11047,6 +11101,11 @@ class $$BudgetsTableOrderingComposer
     column: $table.currency,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get month => $composableBuilder(
+    column: $table.month,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BudgetsTableAnnotationComposer
@@ -11093,6 +11152,9 @@ class $$BudgetsTableAnnotationComposer
 
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get month =>
+      $composableBuilder(column: $table.month, builder: (column) => column);
 }
 
 class $$BudgetsTableTableManager
@@ -11133,6 +11195,7 @@ class $$BudgetsTableTableManager
                 Value<String> categoryId = const Value.absent(),
                 Value<int> amountMinor = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<String?> month = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion(
                 id: id,
@@ -11145,6 +11208,7 @@ class $$BudgetsTableTableManager
                 categoryId: categoryId,
                 amountMinor: amountMinor,
                 currency: currency,
+                month: month,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11159,6 +11223,7 @@ class $$BudgetsTableTableManager
                 required String categoryId,
                 required int amountMinor,
                 required String currency,
+                Value<String?> month = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion.insert(
                 id: id,
@@ -11171,6 +11236,7 @@ class $$BudgetsTableTableManager
                 categoryId: categoryId,
                 amountMinor: amountMinor,
                 currency: currency,
+                month: month,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

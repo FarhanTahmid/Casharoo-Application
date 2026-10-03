@@ -452,4 +452,123 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get previousMonth => 'Previous month';
+
+  @override
+  String get nextMonth => 'Next month';
+
+  @override
+  String get budgetThisMonth => 'Budget this month';
+
+  @override
+  String get spent => 'Spent';
+
+  @override
+  String get remaining => 'Remaining';
+
+  @override
+  String get dailyAllowance => 'Daily allowance';
+
+  @override
+  String perDay(String amount) {
+    return '$amount a day';
+  }
+
+  @override
+  String get thisMonthOnly => 'This month only';
+
+  @override
+  String get thisMonthOnlyHint => 'Other months keep the usual limit.';
+
+  @override
+  String usualLimit(String amount) {
+    return 'Usual limit: $amount';
+  }
+
+  @override
+  String get useUsualLimit => 'Use usual limit';
+
+  @override
+  String get noTransactionsOnDay => 'Nothing recorded on this day.';
+
+  @override
+  String get categories => 'Categories';
+
+  @override
+  String get noCategories => 'No categories yet.';
+
+  @override
+  String get renameCategory => 'Rename category';
+
+  @override
+  String deleteCategoryConfirm(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count transactions stay, without a category, and its budgets are removed.',
+      one:
+          '1 transaction stays, without a category, and its budgets are removed.',
+      zero: 'Its budgets are removed.',
+    );
+    return 'Delete \"$name\"? $_temp0';
+  }
+
+  @override
+  String get net => 'Net';
+
+  @override
+  String get lastSixMonths => 'Last 6 months';
+
+  @override
+  String get topCategories => 'Top spending';
+
+  @override
+  String changeVsLastMonth(String percent) {
+    return '$percent% vs last month';
+  }
+
+  @override
+  String get newThisMonth => 'New this month';
+
+  @override
+  String get accountBalances => 'Account balances';
+
+  @override
+  String get server => 'Server';
+
+  @override
+  String get serverHint =>
+      'Address of the Casharoo API this test build talks to.';
+
+  @override
+  String get serverChangeConfirm =>
+      'Switch server? You will be logged out and data on this device is removed.';
+
+  @override
+  String get serverInvalid =>
+      'Enter an address starting with http:// or https://';
+
+  @override
+  String get resetToDefault => 'Reset to default';
+
+  @override
+  String version(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get sendFeedback => 'Send feedback';
+
+  @override
+  String get sendFeedbackHint => 'Tell us what works and what does not.';
+
+  @override
+  String get needsConnectionRetry =>
+      'This needs an internet connection. Try again when you are online.';
+
+  @override
+  String get retry => 'Retry';
 }

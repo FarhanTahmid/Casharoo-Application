@@ -9,6 +9,7 @@ import 'core/theme.dart';
 import 'features/auth/auth_pages.dart';
 import 'features/cashbook/cashbook_pages.dart';
 import 'features/onboarding/onboarding_page.dart';
+import 'features/personal/categories_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/shell/home_shell.dart';
 import 'l10n/app_localizations.dart';
@@ -58,6 +59,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
       GoRoute(path: '/', builder: (_, _) => const HomeShell()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+      GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
       GoRoute(
         path: '/cashbook/:id',
         builder: (_, state) => CashbookPage(bookId: state.pathParameters['id']!),

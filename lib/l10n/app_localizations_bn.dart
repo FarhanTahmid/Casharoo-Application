@@ -452,4 +452,120 @@ class AppLocalizationsBn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get previousMonth => 'আগের মাস';
+
+  @override
+  String get nextMonth => 'পরের মাস';
+
+  @override
+  String get budgetThisMonth => 'এই মাসের বাজেট';
+
+  @override
+  String get spent => 'খরচ হয়েছে';
+
+  @override
+  String get remaining => 'বাকি';
+
+  @override
+  String get dailyAllowance => 'দৈনিক সীমা';
+
+  @override
+  String perDay(String amount) {
+    return 'দিনে $amount';
+  }
+
+  @override
+  String get thisMonthOnly => 'শুধু এই মাসে';
+
+  @override
+  String get thisMonthOnlyHint => 'অন্য মাসে সাধারণ সীমাই থাকবে।';
+
+  @override
+  String usualLimit(String amount) {
+    return 'সাধারণ সীমা: $amount';
+  }
+
+  @override
+  String get useUsualLimit => 'সাধারণ সীমা ব্যবহার করুন';
+
+  @override
+  String get noTransactionsOnDay => 'এই দিনে কিছু লেখা নেই।';
+
+  @override
+  String get categories => 'খাতসমূহ';
+
+  @override
+  String get noCategories => 'এখনো কোনো খাত নেই।';
+
+  @override
+  String get renameCategory => 'খাতের নাম বদলান';
+
+  @override
+  String deleteCategoryConfirm(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countটি লেনদেন খাত ছাড়া থেকে যাবে, আর এর বাজেট মুছে যাবে।',
+      zero: 'এর বাজেটও মুছে যাবে।',
+    );
+    return '\"$name\" মুছবেন? $_temp0';
+  }
+
+  @override
+  String get net => 'নিট';
+
+  @override
+  String get lastSixMonths => 'গত ৬ মাস';
+
+  @override
+  String get topCategories => 'সবচেয়ে বেশি খরচ';
+
+  @override
+  String changeVsLastMonth(String percent) {
+    return 'গত মাসের তুলনায় $percent%';
+  }
+
+  @override
+  String get newThisMonth => 'এই মাসে নতুন';
+
+  @override
+  String get accountBalances => 'অ্যাকাউন্টের ব্যালেন্স';
+
+  @override
+  String get server => 'সার্ভার';
+
+  @override
+  String get serverHint =>
+      'এই টেস্ট বিল্ড যে ক্যাশারু সার্ভারের সাথে কথা বলে তার ঠিকানা।';
+
+  @override
+  String get serverChangeConfirm =>
+      'সার্ভার বদলাবেন? আপনি লগ আউট হবেন এবং এই ডিভাইসের তথ্য মুছে যাবে।';
+
+  @override
+  String get serverInvalid =>
+      'http:// বা https:// দিয়ে শুরু হওয়া ঠিকানা লিখুন';
+
+  @override
+  String get resetToDefault => 'আগের অবস্থায় ফেরান';
+
+  @override
+  String version(String version) {
+    return 'সংস্করণ $version';
+  }
+
+  @override
+  String get sendFeedback => 'মতামত পাঠান';
+
+  @override
+  String get sendFeedbackHint => 'কী ভালো লাগছে আর কী লাগছে না, জানান।';
+
+  @override
+  String get needsConnectionRetry =>
+      'এর জন্য ইন্টারনেট সংযোগ লাগবে। অনলাইনে এসে আবার চেষ্টা করুন।';
+
+  @override
+  String get retry => 'আবার চেষ্টা করুন';
 }

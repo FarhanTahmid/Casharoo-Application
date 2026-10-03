@@ -1,5 +1,6 @@
 {
   "FLAVOR": "dev",
-  "API_URL": "http://localhost:8000",
-  "GOOGLE_SERVER_CLIENT_ID": ""
+  "API_URL": "http://10.0.2.2:8000",
+  "GOOGLE_SERVER_CLIENT_ID": "",
+  "FEEDBACK_EMAIL": ""
 }

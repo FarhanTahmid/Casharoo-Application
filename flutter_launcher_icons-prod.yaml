@@ -1,0 +1,10 @@
+# Placeholder icon for the prod flavour; regenerate with tool/make_icons.py, then
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  remove_alpha_ios: true
+  image_path: assets/icon/icon_prod.png
+  adaptive_icon_background: "#136AEE"
+  adaptive_icon_foreground: assets/icon/foreground_prod.png
+  min_sdk_android: 24

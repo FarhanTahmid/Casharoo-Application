@@ -30,13 +30,30 @@ IconData accountKindIcon(String kind) => switch (kind) {
       _ => Icons.payments,
     };
 
-void openTransactionForm(BuildContext context, Workspace workspace, {TransactionView? existing}) =>
+/// [date] (ISO) preselects the day of a new transaction, e.g. from the budget calendar.
+void openTransactionForm(BuildContext context, Workspace workspace, {TransactionView? existing, String? date}) =>
     Navigator.of(context).push(MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => TransactionFormPage(workspace: workspace, existing: existing),
+      builder: (_) => TransactionFormPage(workspace: workspace, existing: existing, initialDate: date),
     ));
 
-/// Balances, this month's income and expense, and where the money went.
+final monthSummaryProvider = StreamProvider.family<MonthSummary, (String, String)>(
+  (ref, key) => ref.watch(ledgerRepositoryProvider).watchMonth(key.$1, ref.watch(selectedMonthProvider), key.$2),
+);
+
+final monthlyTotalsProvider = StreamProvider.family<List<MonthTotals>, (String, String)>(
+  (ref, key) =>
+      ref.watch(ledgerRepositoryProvider).watchMonthlyTotals(key.$1, ref.watch(selectedMonthProvider), key.$2),
+);
+
+final topCategoriesProvider = StreamProvider.family<List<CategoryChange>, (String, String)>(
+  (ref, key) =>
+      ref.watch(ledgerRepositoryProvider).watchTopCategories(key.$1, ref.watch(selectedMonthProvider), key.$2),
+);
+
+/// Balances, the selected month's income and expense, where the money went,
+/// how the last six months compare and which categories moved most.
+/// Figures are in the workspace currency; accounts in other currencies are listed, not added up.
 class OverviewPage extends ConsumerWidget {
   const OverviewPage({super.key, required this.workspace});
 
@@ -46,19 +63,35 @@ class OverviewPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final currency = workspace.defaultCurrency;
+    final key = (workspace.id, currency);
     final accounts = ref.watch(accountsProvider(workspace.id)).value ?? const <AccountBalance>[];
-    // Balances in other currencies are listed under Accounts, not added up here
     final total = accounts
         .where((a) => a.account.currency == currency && !a.account.isArchived)
         .fold<int>(0, (sum, a) => sum + a.balanceMinor);
-    final repo = ref.watch(ledgerRepositoryProvider);
+    final month = ref.watch(monthSummaryProvider(key)).value;
+    final trend = ref.watch(monthlyTotalsProvider(key)).value ?? const <MonthTotals>[];
+    final top = ref.watch(topCategoriesProvider(key)).value ?? const <CategoryChange>[];
+    final selectedMonth = ref.watch(selectedMonthProvider);
+    final titleStyle = Theme.of(context).textTheme.titleMedium;
+
+    Widget section(String title, List<Widget> children) => Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [Text(title, style: titleStyle), const SizedBox(height: 12), ...children],
+            ),
+          ),
+        );
 
     return RefreshIndicator(
       onRefresh: ref.read(syncControllerProvider.notifier).syncNow,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
         children: [
           Card(
+            margin: const EdgeInsets.only(bottom: 4),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -72,85 +105,191 @@ class OverviewPage extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          StreamBuilder<MonthSummary>(
-            stream: repo.watchMonth(workspace.id, DateTime.now(), currency),
-            builder: (context, snapshot) {
-              final month = snapshot.data;
-              if (month == null) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.thisMonth, style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _Stat(l10n.income, context.money(month.incomeMinor, currency), amountColor(true)),
-                              _Stat(l10n.expense, context.money(month.expenseMinor, currency), amountColor(false)),
-                            ],
-                          ),
-                        ],
-                      ),
+          MonthSwitcher(month: selectedMonth, onChanged: ref.read(selectedMonthProvider.notifier).set),
+          if (month != null) ...[
+            Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    _Stat(l10n.income, context.money(month.incomeMinor, currency), amountColor(true)),
+                    _Stat(l10n.expense, context.money(month.expenseMinor, currency), amountColor(false)),
+                    _Stat(
+                      l10n.net,
+                      context.money(month.incomeMinor - month.expenseMinor, currency),
+                      amountColor(month.incomeMinor >= month.expenseMinor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            section(l10n.spendingByCategory, [
+              if (month.byCategory.isEmpty)
+                Text(l10n.noSpendingYet)
+              else ...[
+                SizedBox(
+                  height: 180,
+                  child: PieChart(PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 40,
+                    sections: [
+                      for (final (index, slice) in month.byCategory.indexed)
+                        PieChartSectionData(
+                          value: slice.value.toDouble(),
+                          color: _chartColors[index % _chartColors.length],
+                          showTitle: false,
+                          radius: 44,
+                        ),
+                    ],
+                  )),
+                ),
+                const SizedBox(height: 12),
+                for (final (index, slice) in month.byCategory.indexed)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 6, backgroundColor: _chartColors[index % _chartColors.length]),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(slice.key ?? l10n.uncategorised)),
+                        Text(context.money(slice.value, currency)),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.spendingByCategory, style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 12),
-                          if (month.byCategory.isEmpty)
-                            Text(l10n.noSpendingYet)
-                          else ...[
-                            SizedBox(
-                              height: 180,
-                              child: PieChart(PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 40,
-                                sections: [
-                                  for (final (index, slice) in month.byCategory.indexed)
-                                    PieChartSectionData(
-                                      value: slice.value.toDouble(),
-                                      color: _chartColors[index % _chartColors.length],
-                                      showTitle: false,
-                                      radius: 44,
-                                    ),
-                                ],
-                              )),
+              ],
+            ]),
+          ],
+          if (trend.any((m) => m.incomeMinor > 0 || m.expenseMinor > 0))
+            section(l10n.lastSixMonths, [_TrendChart(trend: trend, currency: currency)]),
+          if (top.isNotEmpty)
+            section(l10n.topCategories, [
+              for (final item in top)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.categoryName ?? l10n.uncategorised),
+                            Text(
+                              switch (item.changePercent) {
+                                null => l10n.newThisMonth,
+                                final p => l10n.changeVsLastMonth(_signedPercent(context, p)),
+                              },
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: (item.changePercent ?? 0) > 0 ? AppTheme.errorColor : AppTheme.successColor,
+                                  ),
                             ),
-                            const SizedBox(height: 12),
-                            for (final (index, slice) in month.byCategory.indexed)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(radius: 6, backgroundColor: _chartColors[index % _chartColors.length]),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text(slice.key ?? l10n.uncategorised)),
-                                    Text(context.money(slice.value, currency)),
-                                  ],
-                                ),
-                              ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
+                      Text(context.money(item.thisMonthMinor, currency)),
+                    ],
                   ),
-                ],
-              );
-            },
-          ),
+                ),
+            ]),
+          if (accounts.isNotEmpty)
+            section(l10n.accountBalances, [
+              for (final item in accounts.where((a) => !a.account.isArchived))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(accountKindIcon(item.account.kind), size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(item.account.name)),
+                      Text(context.money(item.balanceMinor, item.account.currency)),
+                    ],
+                  ),
+                ),
+            ]),
         ],
       ),
+    );
+  }
+}
+
+String _signedPercent(BuildContext context, int percent) {
+  final text = '${percent > 0 ? '+' : ''}$percent';
+  return context.languageCode == 'bn' ? Money.toBengaliDigits(text) : text;
+}
+
+/// Income and expense bars for each month, oldest on the left.
+class _TrendChart extends StatelessWidget {
+  const _TrendChart({required this.trend, required this.currency});
+
+  final List<MonthTotals> trend;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.languageCode;
+    final months = MaterialLocalizations.of(context);
+    final highest = trend.fold<int>(1, (max, m) => [max, m.incomeMinor, m.expenseMinor].reduce((a, b) => a > b ? a : b));
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: BarChart(BarChartData(
+            maxY: highest * 1.15,
+            alignment: BarChartAlignment.spaceAround,
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipItem: (group, _, rod, _) => BarTooltipItem(
+                  Money.format(rod.toY.round(), currency, locale: locale),
+                  const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+            titlesData: FlTitlesData(
+              leftTitles: const AxisTitles(),
+              rightTitles: const AxisTitles(),
+              topTitles: const AxisTitles(),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index < 0 || index >= trend.length) return const SizedBox.shrink();
+                    // "Oct" from "October 2026"
+                    final label = months.formatMonthYear(trend[index].month).split(' ').first;
+                    return SideTitleWidget(
+                      meta: meta,
+                      child: Text(label.length > 3 && locale != 'bn' ? label.substring(0, 3) : label,
+                          style: Theme.of(context).textTheme.labelSmall),
+                    );
+                  },
+                ),
+              ),
+            ),
+            barGroups: [
+              for (final (index, m) in trend.indexed)
+                BarChartGroupData(x: index, barsSpace: 3, barRods: [
+                  BarChartRodData(toY: m.incomeMinor.toDouble(), color: AppTheme.successColor, width: 8),
+                  BarChartRodData(toY: m.expenseMinor.toDouble(), color: AppTheme.errorColor, width: 8),
+                ]),
+            ],
+          )),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircleAvatar(radius: 5, backgroundColor: AppTheme.successColor),
+            const SizedBox(width: 4),
+            Text(context.l10n.income, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(width: 16),
+            const CircleAvatar(radius: 5, backgroundColor: AppTheme.errorColor),
+            const SizedBox(width: 4),
+            Text(context.l10n.expense, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -174,6 +313,39 @@ class _Stat extends StatelessWidget {
       );
 }
 
+/// One transaction row: what, when, from which account, how much.
+class TransactionTile extends StatelessWidget {
+  const TransactionTile({super.key, required this.view, required this.onTap, this.showDate = true});
+
+  final TransactionView view;
+  final VoidCallback onTap;
+  final bool showDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final t = view.transaction;
+    final isTransfer = t.kind == 'transfer';
+    final label = isTransfer ? l10n.transfer : (view.categoryName ?? l10n.uncategorised);
+    return ListTile(
+      leading: CircleAvatar(
+        child: Icon(isTransfer ? Icons.swap_horiz : (t.amountMinor > 0 ? Icons.south_west : Icons.north_east)),
+      ),
+      title: Text(t.note.isNotEmpty ? t.note : label),
+      subtitle: Text([
+        if (showDate) formatDate(context, t.occurredOn),
+        view.accountName,
+        if (t.note.isNotEmpty) label,
+      ].join(' · ')),
+      trailing: Text(
+        context.money(t.amountMinor, t.currency),
+        style: TextStyle(fontWeight: FontWeight.w600, color: isTransfer ? null : amountColor(t.amountMinor > 0)),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
 class TransactionsPage extends ConsumerWidget {
   const TransactionsPage({super.key, required this.workspace});
 
@@ -182,54 +354,42 @@ class TransactionsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    return RefreshIndicator(
-      onRefresh: ref.read(syncControllerProvider.notifier).syncNow,
-      child: AsyncView(
-        value: ref.watch(transactionsProvider(workspace.id)),
-        builder: (transactions) => transactions.isEmpty
-            ? ListView(children: [
-                SizedBox(height: 400, child: EmptyState(icon: Icons.receipt_long_outlined, message: l10n.noTransactions)),
-              ])
-            : ListView.separated(
-                padding: const EdgeInsets.only(bottom: 96),
-                itemCount: transactions.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final view = transactions[index];
-                  final t = view.transaction;
-                  final isTransfer = t.kind == 'transfer';
-                  final label = isTransfer ? l10n.transfer : (view.categoryName ?? l10n.uncategorised);
-                  return ListTile(
-                    leading: CircleAvatar(
-                      child: Icon(isTransfer
-                          ? Icons.swap_horiz
-                          : (t.amountMinor > 0 ? Icons.south_west : Icons.north_east)),
-                    ),
-                    title: Text(t.note.isNotEmpty ? t.note : label),
-                    subtitle: Text('${formatDate(context, t.occurredOn)} · ${view.accountName}'
-                        '${t.note.isNotEmpty ? ' · $label' : ''}'),
-                    trailing: Text(
-                      context.money(t.amountMinor, t.currency),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: isTransfer ? null : amountColor(t.amountMinor > 0),
+    return Column(
+      children: [
+        MonthSwitcher(month: ref.watch(selectedMonthProvider), onChanged: ref.read(selectedMonthProvider.notifier).set),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: ref.read(syncControllerProvider.notifier).syncNow,
+            child: AsyncView(
+              value: ref.watch(transactionsProvider(workspace.id)),
+              builder: (transactions) => transactions.isEmpty
+                  ? ListView(children: [
+                      SizedBox(height: 400, child: EmptyState(icon: Icons.receipt_long_outlined, message: l10n.noTransactions)),
+                    ])
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 96),
+                      itemCount: transactions.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) => TransactionTile(
+                        view: transactions[index],
+                        onTap: () => openTransactionForm(context, workspace, existing: transactions[index]),
                       ),
                     ),
-                    onTap: () => openTransactionForm(context, workspace, existing: view),
-                  );
-                },
-              ),
-      ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// Add an expense, income or transfer; or edit the amount, date, category and note of an existing one.
 class TransactionFormPage extends ConsumerStatefulWidget {
-  const TransactionFormPage({super.key, required this.workspace, this.existing});
+  const TransactionFormPage({super.key, required this.workspace, this.existing, this.initialDate});
 
   final Workspace workspace;
   final TransactionView? existing;
+  final String? initialDate;
 
   @override
   ConsumerState<TransactionFormPage> createState() => _TransactionFormPageState();
@@ -243,7 +403,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
     text: _original == null ? '' : Money.toInput(_original.amountMinor.abs(), _original.currency),
   );
   late final _note = TextEditingController(text: _original?.note ?? '');
-  late String _date = _original?.occurredOn ?? todayIso();
+  late String _date = _original?.occurredOn ?? widget.initialDate ?? todayIso();
   late String? _accountId = _original?.accountId;
   String? _toAccountId;
   late String? _categoryId = _original?.categoryId;
@@ -522,122 +682,4 @@ class _AccountFormState extends ConsumerState<_AccountForm> {
       ),
     );
   }
-}
-
-/// Monthly limits per expense category, with how much of each is used.
-class BudgetsPage extends ConsumerWidget {
-  const BudgetsPage({super.key, required this.workspace});
-
-  final Workspace workspace;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    return AsyncView(
-      value: ref.watch(budgetsProvider(workspace.id)),
-      builder: (budgets) => budgets.isEmpty
-          ? EmptyState(icon: Icons.savings_outlined, message: l10n.noBudgets)
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              children: [
-                for (final item in budgets)
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => showBudgetForm(context, ref, workspace, existing: item),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(item.categoryName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                ),
-                                if (item.isOver)
-                                  Text(l10n.overBudget, style: const TextStyle(color: AppTheme.errorColor)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: (item.spentMinor / item.budget.amountMinor).clamp(0, 1).toDouble(),
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(4),
-                              color: item.isOver ? AppTheme.errorColor : AppTheme.primaryColor,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(l10n.spentOf(
-                              context.money(item.spentMinor, item.budget.currency),
-                              context.money(item.budget.amountMinor, item.budget.currency),
-                            )),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
-Future<void> showBudgetForm(BuildContext context, WidgetRef ref, Workspace workspace, {BudgetProgress? existing}) async {
-  final l10n = context.l10n;
-  final repo = ref.read(ledgerRepositoryProvider);
-  final currency = existing?.budget.currency ?? workspace.defaultCurrency;
-  final categories = (await repo.watchCategories(workspace.id).first).where((c) => c.kind == 'expense').toList();
-  if (!context.mounted || categories.isEmpty) return;
-
-  final formKey = GlobalKey<FormState>();
-  final amount = TextEditingController(
-    text: existing == null ? '' : Money.toInput(existing.budget.amountMinor, currency),
-  );
-  var categoryId = existing?.budget.categoryId ?? categories.first.id;
-
-  await showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(existing == null ? l10n.addBudget : existing.categoryName),
-      content: Form(
-        key: formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (existing == null) ...[
-              DropdownButtonFormField<String>(
-                value: categoryId,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l10n.category),
-                items: [for (final c in categories) DropdownMenuItem(value: c.id, child: Text(c.name))],
-                onChanged: (value) => categoryId = value!,
-              ),
-              const SizedBox(height: 16),
-            ],
-            AmountField(controller: amount, currency: currency, label: l10n.monthlyLimit),
-          ],
-        ),
-      ),
-      actions: [
-        if (existing != null)
-          TextButton(
-            onPressed: () async {
-              await repo.deleteBudget(existing.budget.id);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: Text(l10n.delete),
-          ),
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
-        FilledButton(
-          onPressed: () async {
-            if (!formKey.currentState!.validate()) return;
-            await repo.setBudget(workspace.id, categoryId, Money.parse(amount.text, currency)!, currency);
-            if (context.mounted) Navigator.pop(context);
-          },
-          child: Text(l10n.save),
-        ),
-      ],
-    ),
-  );
 }

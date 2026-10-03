@@ -35,6 +35,7 @@ class SyncEngine {
   static const _pushBatchSize = 100;
 
   Future<void> sync() async {
+    await _sendOnboarding();
     await refreshWorkspaces();
     final workspaces = await db.select(db.workspaces).get();
     for (final workspace in workspaces) {
@@ -68,6 +69,15 @@ class SyncEngine {
             ));
       }
     });
+  }
+
+  /// The onboarding answer is kept on the account, so another phone or a
+  /// reinstall does not ask again. A failure leaves it queued for the next run.
+  Future<void> _sendOnboarding() async {
+    final mode = await db.getSetting(onboardingUnsentKey);
+    if (mode == null) return;
+    final response = _checkSession(await api.patch('/api/v1/me/', {'onboarded_at': nowIso(), 'primary_mode': mode}));
+    if (response.ok) await db.setSetting(onboardingUnsentKey, null);
   }
 
   Future<void> _push(String workspaceId) async {
@@ -181,10 +191,15 @@ class SyncEngine {
   }
 
   ApiResponse _check(ApiResponse response) {
+    _checkSession(response);
+    if (!response.ok) throw SyncException('Server error ${response.statusCode}.');
+    return response;
+  }
+
+  ApiResponse _checkSession(ApiResponse response) {
     if (response.statusCode == 401 || response.statusCode == 403 || response.statusCode == 410) {
       throw const SessionExpiredException();
     }
-    if (!response.ok) throw SyncException('Server error ${response.statusCode}.');
     return response;
   }
 

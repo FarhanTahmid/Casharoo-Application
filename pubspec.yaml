@@ -40,8 +40,11 @@ dev_dependencies:
   drift_dev: ^2.28.0
   build_runner: ^2.5.4
   sqlite3: ^2.9.4
+  flutter_launcher_icons: 0.14.4
 
 flutter:
+  # Plain `flutter run` (and VS Code Run Without Debugging) builds this flavour.
+  default-flavor: dev
   uses-material-design: true
   # Generates AppLocalizations from lib/l10n/*.arb
   generate: true

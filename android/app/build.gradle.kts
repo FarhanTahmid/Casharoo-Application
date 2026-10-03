@@ -6,8 +6,8 @@ val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-    println("Loaded keystore properties from ${keystorePropertiesFile.path}")
 }
+val hasUploadKey = !keystoreProperties.getProperty("storeFile").isNullOrBlank()
 
 plugins {
     id("com.android.application")
@@ -64,45 +64,42 @@ android {
         }
     }
 
+    // key.properties (gitignored) holds the upload key. Without it (CI, a fresh
+    // clone) debug builds use Android's default debug key and release builds stop
+    // with an explanation instead of producing an unsigned package.
     signingConfigs {
-        // Use getByName to modify existing entries rather than create duplicates
-        create("releaseCustom") {
-        val storeFileProp = keystoreProperties.getProperty("storeFile")
-        if (!storeFileProp.isNullOrBlank()) {
-            val sf = file(storeFileProp)
-            if (!sf.exists()) logger.warn("Keystore not found: $sf")
-            storeFile = sf
-            storePassword = keystoreProperties.getProperty("storePassword")
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-        } else {
-            logger.warn("Missing 'storeFile' in key.properties")
-        }
-        }
-
-        // OPTIONAL: sign debug with custom key too
-        create("debugCustom") {
-        val storeFileProp = keystoreProperties.getProperty("storeFile")
-        if (!storeFileProp.isNullOrBlank()) {
-            val sf = file(storeFileProp)
-            if (!sf.exists()) logger.warn("Keystore not found: $sf")
-            storeFile = sf
-            storePassword = keystoreProperties.getProperty("storePassword")
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-        }
+        if (hasUploadKey) {
+            create("upload") {
+                val sf = file(keystoreProperties.getProperty("storeFile"))
+                if (!sf.exists()) logger.warn("Keystore not found: $sf")
+                storeFile = sf
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         getByName("release") {
-        // <<< THIS is the key line >>>
-        signingConfig = signingConfigs.getByName("releaseCustom")
+            signingConfig = if (hasUploadKey) signingConfigs.getByName("upload") else null
         }
         getByName("debug") {
-        // comment this if you want default debug keystore
-        signingConfig = signingConfigs.getByName("debugCustom")
+            // Same key as release when available, so the SHA-1 registered for Google sign-in matches
+            if (hasUploadKey) signingConfig = signingConfigs.getByName("upload")
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val releasePackaging = allTasks.any {
+        (it.name.startsWith("assemble") || it.name.startsWith("bundle")) && it.name.endsWith("Release")
+    }
+    if (releasePackaging && !hasUploadKey) {
+        throw GradleException(
+            "Release builds need android/key.properties with storeFile, storePassword, keyAlias and keyPassword. " +
+                "See docs/release.md."
+        )
     }
 }
 

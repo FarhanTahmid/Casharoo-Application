@@ -21,8 +21,27 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final tokenStoreProvider = Provider<TokenStore>((ref) => SecureTokenStore());
 
+/// The API the app talks to. Test builds may override it in Settings; main()
+/// reads the stored choice before the first request so the session check uses it.
+class ServerUrlController extends Notifier<String> {
+  ServerUrlController([this._initial]);
+
+  final String? _initial;
+
+  @override
+  String build() => _initial ?? AppConfig.apiUrl;
+
+  /// Null goes back to the build's own server.
+  Future<void> set(String? url) async {
+    await ref.read(databaseProvider).setSetting(serverUrlSettingKey, url);
+    state = url ?? AppConfig.apiUrl;
+  }
+}
+
+final serverUrlProvider = NotifierProvider<ServerUrlController, String>(ServerUrlController.new);
+
 final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(baseUrl: AppConfig.apiUrl, tokenStore: ref.watch(tokenStoreProvider)),
+  (ref) => ApiClient(baseUrl: ref.watch(serverUrlProvider), tokenStore: ref.watch(tokenStoreProvider)),
 );
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(ref.watch(apiClientProvider)));
@@ -140,6 +159,8 @@ class AuthController extends Notifier<AuthState> {
     await _db.setSetting(_stepKey, null);
     await _db.setSetting(_emailKey, null);
     await _db.setSetting(CurrentWorkspaceController.settingKey, null);
+    await _db.setSetting(onboardedSettingKey, null);
+    await _db.setSetting(onboardingUnsentKey, null);
   }
 }
 
@@ -237,13 +258,19 @@ final workspacesProvider = StreamProvider<List<Workspace>>((ref) {
 class CurrentWorkspaceController extends Notifier<String?> {
   static const settingKey = 'workspace_id';
 
+  /// A choice made before the stored one finished loading must not be overwritten by it.
+  bool _chosen = false;
+
   @override
   String? build() {
-    ref.read(databaseProvider).getSetting(settingKey).then((value) => state = value);
+    ref.read(databaseProvider).getSetting(settingKey).then((value) {
+      if (!_chosen) state = value;
+    });
     return null;
   }
 
   Future<void> select(String? id) async {
+    _chosen = true;
     state = id;
     await ref.read(databaseProvider).setSetting(settingKey, id);
   }
@@ -267,15 +294,18 @@ final currentWorkspaceProvider = Provider<Workspace?>((ref) {
 class LocaleController extends Notifier<Locale> {
   static const _key = 'locale';
 
+  bool _chosen = false;
+
   @override
   Locale build() {
     ref.read(databaseProvider).getSetting(_key).then((value) {
-      if (value != null) state = Locale(value);
+      if (value != null && !_chosen) state = Locale(value);
     });
     return const Locale('en');
   }
 
   Future<void> set(Locale locale) async {
+    _chosen = true;
     state = locale;
     await ref.read(databaseProvider).setSetting(_key, locale.languageCode);
   }
@@ -286,15 +316,20 @@ final localeProvider = NotifierProvider<LocaleController, Locale>(LocaleControll
 class ThemeModeController extends Notifier<ThemeMode> {
   static const _key = 'theme_mode';
 
+  bool _chosen = false;
+
   @override
   ThemeMode build() {
     ref.read(databaseProvider).getSetting(_key).then((value) {
-      if (value != null) state = ThemeMode.values.firstWhere((m) => m.name == value, orElse: () => ThemeMode.system);
+      if (value != null && !_chosen) {
+        state = ThemeMode.values.firstWhere((m) => m.name == value, orElse: () => ThemeMode.system);
+      }
     });
     return ThemeMode.system;
   }
 
   Future<void> set(ThemeMode mode) async {
+    _chosen = true;
     state = mode;
     await ref.read(databaseProvider).setSetting(_key, mode.name);
   }

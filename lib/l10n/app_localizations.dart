@@ -913,6 +913,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 change has not synced and will be lost.} other{{count} changes have not synced and will be lost.}}'**
   String logOutUnsynced(int count);
+
+  /// No description provided for @previousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get previousMonth;
+
+  /// No description provided for @nextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get nextMonth;
+
+  /// No description provided for @budgetThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget this month'**
+  String get budgetThisMonth;
+
+  /// No description provided for @spent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get spent;
+
+  /// No description provided for @remaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remaining;
+
+  /// No description provided for @dailyAllowance.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily allowance'**
+  String get dailyAllowance;
+
+  /// No description provided for @perDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} a day'**
+  String perDay(String amount);
+
+  /// No description provided for @thisMonthOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This month only'**
+  String get thisMonthOnly;
+
+  /// No description provided for @thisMonthOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Other months keep the usual limit.'**
+  String get thisMonthOnlyHint;
+
+  /// No description provided for @usualLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Usual limit: {amount}'**
+  String usualLimit(String amount);
+
+  /// No description provided for @useUsualLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Use usual limit'**
+  String get useUsualLimit;
+
+  /// No description provided for @noTransactionsOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded on this day.'**
+  String get noTransactionsOnDay;
+
+  /// No description provided for @categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categories;
+
+  /// No description provided for @noCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories yet.'**
+  String get noCategories;
+
+  /// No description provided for @renameCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename category'**
+  String get renameCategory;
+
+  /// No description provided for @deleteCategoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"? {count, plural, =0{Its budgets are removed.} =1{1 transaction stays, without a category, and its budgets are removed.} other{{count} transactions stay, without a category, and its budgets are removed.}}'**
+  String deleteCategoryConfirm(String name, int count);
+
+  /// No description provided for @net.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get net;
+
+  /// No description provided for @lastSixMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 months'**
+  String get lastSixMonths;
+
+  /// No description provided for @topCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Top spending'**
+  String get topCategories;
+
+  /// No description provided for @changeVsLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% vs last month'**
+  String changeVsLastMonth(String percent);
+
+  /// No description provided for @newThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'New this month'**
+  String get newThisMonth;
+
+  /// No description provided for @accountBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Account balances'**
+  String get accountBalances;
+
+  /// No description provided for @server.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get server;
+
+  /// No description provided for @serverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Address of the Casharoo API this test build talks to.'**
+  String get serverHint;
+
+  /// No description provided for @serverChangeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server? You will be logged out and data on this device is removed.'**
+  String get serverChangeConfirm;
+
+  /// No description provided for @serverInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an address starting with http:// or https://'**
+  String get serverInvalid;
+
+  /// No description provided for @resetToDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get resetToDefault;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String version(String version);
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get sendFeedback;
+
+  /// No description provided for @sendFeedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what works and what does not.'**
+  String get sendFeedbackHint;
+
+  /// No description provided for @needsConnectionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'This needs an internet connection. Try again when you are online.'**
+  String get needsConnectionRetry;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 }
 
 class _AppLocalizationsDelegate

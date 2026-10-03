@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
@@ -59,6 +61,13 @@ class SettingsPage extends ConsumerWidget {
               onChanged: (mode) => ref.read(themeModeProvider.notifier).set(mode!),
             ),
           ),
+          if (workspace != null && workspace.kind == 'personal')
+            ListTile(
+              leading: const Icon(Icons.category_outlined),
+              title: Text(l10n.categories),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/categories'),
+            ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.sync),
@@ -100,6 +109,25 @@ class SettingsPage extends ConsumerWidget {
                 deleted ? context.pop() : context.showMessage(l10n.needsConnection);
               },
             ),
+          if (AppConfig.feedbackEmail.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.feedback_outlined),
+              title: Text(l10n.sendFeedback),
+              subtitle: Text('${l10n.sendFeedbackHint}\n${AppConfig.feedbackEmail}'),
+              isThreeLine: true,
+              trailing: const Icon(Icons.copy),
+              onTap: () async {
+                await Clipboard.setData(const ClipboardData(text: AppConfig.feedbackEmail));
+                if (context.mounted) context.showMessage(AppConfig.feedbackEmail);
+              },
+            ),
+          if (AppConfig.allowsServerOverride)
+            ListTile(
+              leading: const Icon(Icons.dns_outlined),
+              title: Text(l10n.server),
+              subtitle: Text('${ref.watch(serverUrlProvider)} · ${AppConfig.flavor}'),
+              onTap: () => _changeServer(context, ref),
+            ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: Text(l10n.logOut),
@@ -117,4 +145,54 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Points a test build at another API. The data on the phone belongs to the old
+/// server, so switching signs out and clears it.
+Future<void> _changeServer(BuildContext context, WidgetRef ref) async {
+  final l10n = context.l10n;
+  final controller = TextEditingController(text: ref.read(serverUrlProvider));
+  final formKey = GlobalKey<FormState>();
+  final choice = await showDialog<(String?,)>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.server),
+      content: Form(
+        key: formKey,
+        child: TextFormField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(helperText: l10n.serverHint, helperMaxLines: 2),
+          validator: (value) {
+            final uri = Uri.tryParse((value ?? '').trim());
+            return uri != null && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty
+                ? null
+                : l10n.serverInvalid;
+          },
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, (null,)), child: Text(l10n.resetToDefault)),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        FilledButton(
+          onPressed: () {
+            if (!formKey.currentState!.validate()) return;
+            var url = controller.text.trim();
+            while (url.endsWith('/')) {
+              url = url.substring(0, url.length - 1);
+            }
+            Navigator.pop(context, (url,));
+          },
+          child: Text(l10n.save),
+        ),
+      ],
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  final (url,) = choice;
+  if ((url ?? AppConfig.apiUrl) == ref.read(serverUrlProvider)) return;
+  if (!await confirm(context, l10n.serverChangeConfirm, action: l10n.save)) return;
+  await ref.read(authControllerProvider.notifier).sessionExpired();
+  await ref.read(serverUrlProvider.notifier).set(url);
 }

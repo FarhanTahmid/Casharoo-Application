@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/db/database.dart';
+import '../../core/db/local_store.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
 import '../cashbook/cashbook_pages.dart';
+import '../personal/budget_calendar_page.dart';
+import '../personal/ledger_repository.dart';
 import '../personal/personal_pages.dart';
 
 /// Creating and deleting workspaces happens on the server, so these need a connection.
@@ -16,8 +19,10 @@ class WorkspaceActions {
 
   final Ref ref;
 
-  /// Returns the new workspace id, or null when offline or refused.
-  Future<String?> createBusiness(String name) => _create(() => ref.read(apiClientProvider).post('/api/v1/workspaces/', {'name': name}));
+  /// Returns the new workspace id, or null when offline or refused. Pass the
+  /// same [id] when retrying: the server then returns the business it already made.
+  Future<String?> createBusiness(String name, {String? id}) => _create(
+      () => ref.read(apiClientProvider).post('/api/v1/workspaces/', {'id': id ?? newId(), 'name': name}));
 
   Future<String?> createDemo() => _create(() => ref.read(apiClientProvider).post('/api/v1/workspaces/demo/'));
 
@@ -92,7 +97,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ? [
             OverviewPage(workspace: workspace),
             TransactionsPage(workspace: workspace),
-            BudgetsPage(workspace: workspace),
+            BudgetCalendarPage(workspace: workspace),
             AccountsPage(workspace: workspace),
           ]
         : [CashbooksPage(workspace: workspace)];
@@ -111,7 +116,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ? null // the cashbooks page brings its own
           : switch (tab) {
               2 => FloatingActionButton.extended(
-                  onPressed: () => showBudgetForm(context, ref, workspace),
+                  onPressed: () => showBudgetForm(context, ref, workspace, month: ref.read(selectedMonthProvider)),
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addBudget),
                 ),

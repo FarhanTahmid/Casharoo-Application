@@ -143,6 +143,39 @@ class DateField extends StatelessWidget {
       );
 }
 
+/// "‹ October 2026 ›": steps a month back or forward. [month] is any day in the month.
+class MonthSwitcher extends StatelessWidget {
+  const MonthSwitcher({super.key, required this.month, required this.onChanged});
+
+  final DateTime month;
+  final ValueChanged<DateTime> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            tooltip: context.l10n.previousMonth,
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () => onChanged(DateTime(month.year, month.month - 1)),
+          ),
+          SizedBox(
+            width: 180,
+            child: Text(
+              MaterialLocalizations.of(context).formatMonthYear(month),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            tooltip: context.l10n.nextMonth,
+            icon: const Icon(Icons.chevron_right),
+            onPressed: () => onChanged(DateTime(month.year, month.month + 1)),
+          ),
+        ],
+      );
+}
+
 /// "1 Oct 2026", with Bengali month names and digits in Bangla.
 String formatDate(BuildContext context, String isoDate) =>
     MaterialLocalizations.of(context).formatMediumDate(DateTime.parse(isoDate));

@@ -36,6 +36,29 @@ class Money {
     return '${negative ? '-' : ''}${withSymbol ? symbol(currency) : ''}$text';
   }
 
+  /// Short whole-unit amount for tight spaces such as a calendar cell: "850",
+  /// "1.2k", "12k", "1.5L" (lakh, for lakh currencies) or "1.5M". No symbol.
+  static String compact(int amountMinor, String currency, {String locale = 'en'}) {
+    final bangla = locale.startsWith('bn');
+    final whole = amountMinor.abs() ~/ _pow10(exponent(currency));
+    final lakh = _lakhCurrencies.contains(currency);
+    String scaled(int unit, String suffix) {
+      final value = whole / unit;
+      final digits = value >= 10 ? value.round().toString() : value.toStringAsFixed(1).replaceAll('.0', '');
+      return '$digits$suffix';
+    }
+
+    final text = switch (whole) {
+      < 1000 => '$whole',
+      < 100000 => scaled(1000, bangla ? 'হা' : 'k'),
+      _ when lakh && whole < 10000000 => scaled(100000, bangla ? 'লা' : 'L'),
+      _ when lakh => scaled(10000000, bangla ? 'কো' : 'Cr'),
+      < 1000000 => scaled(1000, bangla ? 'হা' : 'k'),
+      _ => scaled(1000000, 'M'),
+    };
+    return '${amountMinor < 0 ? '-' : ''}${bangla ? toBengaliDigits(text) : text}';
+  }
+
   /// Plain text for an input field: "1234.50". No grouping, ASCII digits.
   static String toInput(int amountMinor, String currency) {
     final digits = exponent(currency);

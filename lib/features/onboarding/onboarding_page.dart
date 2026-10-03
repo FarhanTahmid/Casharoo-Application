@@ -1,24 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_client.dart';
+import '../../core/auth/auth_repository.dart';
+import '../../core/db/database.dart';
+import '../../core/db/local_store.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
 import '../shell/home_shell.dart';
 
-const onboardedSettingKey = 'onboarded';
-
-/// True once the individual-or-business question has been answered on this device.
+/// True once the individual-or-business question has been answered for the
+/// signed-in account; null while that is being found out. The answer is kept
+/// on the server too, so a second phone or a reinstall skips the question.
 class OnboardedController extends Notifier<bool?> {
   @override
   bool? build() {
-    ref.read(databaseProvider).getSetting(onboardedSettingKey).then((value) => state = value == 'yes');
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next.step != previous?.step) _load();
+    });
+    _load();
     return null; // not known yet
   }
 
-  Future<void> complete() async {
+  Future<void> _load() async {
+    final db = ref.read(databaseProvider);
+    if (await db.getSetting(onboardedSettingKey) == 'yes') {
+      state = true;
+      return;
+    }
+    if (ref.read(authControllerProvider).step != AuthStep.signedIn) {
+      state = false;
+      return;
+    }
+    state = null;
+    try {
+      final response = await ref.read(apiClientProvider).get('/api/v1/me/');
+      if (response.ok && response.json['onboarded_at'] != null) {
+        await db.setSetting(onboardedSettingKey, 'yes');
+        state = true;
+        return;
+      }
+    } on OfflineException {
+      // Offline on a fresh install: ask; the answer reaches the server later
+    }
+    state = false;
+  }
+
+  /// [mode] is 'personal' or 'business'. Sync tells the server.
+  Future<void> complete(String mode) async {
     state = true;
-    await ref.read(databaseProvider).setSetting(onboardedSettingKey, 'yes');
+    final db = ref.read(databaseProvider);
+    await db.setSetting(onboardedSettingKey, 'yes');
+    await db.setSetting(onboardingUnsentKey, mode);
+    ref.read(syncControllerProvider.notifier).schedule(immediately: true);
   }
 }
 
@@ -36,15 +71,19 @@ class OnboardingPage extends ConsumerStatefulWidget {
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   bool _busy = false;
 
-  Future<void> _finish([Future<String?> Function()? create]) async {
+  /// Kept across retries, so a business whose creation reply was lost is not made twice.
+  final _businessId = newId();
+
+  /// "For myself" works offline. A business is created on the server, so it needs a connection.
+  Future<void> _finish(String mode, [Future<String?> Function()? create]) async {
     if (create != null) {
       setState(() => _busy = true);
       final id = await create();
       if (!mounted) return;
       setState(() => _busy = false);
-      if (id == null) return context.showMessage(context.l10n.needsConnection);
+      if (id == null) return context.showMessage(context.l10n.needsConnectionRetry);
     }
-    await ref.read(onboardedProvider.notifier).complete();
+    await ref.read(onboardedProvider.notifier).complete(mode);
   }
 
   @override
@@ -78,12 +117,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   const SizedBox(height: 16),
                   Text(l10n.welcomeTitle, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 32),
-                  choice(Icons.person, l10n.forMyself, l10n.forMyselfHint, _finish),
+                  choice(Icons.person, l10n.forMyself, l10n.forMyselfHint, () => _finish('personal')),
                   choice(Icons.storefront, l10n.forMyBusiness, l10n.forMyBusinessHint, () async {
                     final name = await promptText(context, title: l10n.createBusiness, label: l10n.businessName);
-                    if (name != null) await _finish(() => actions.createBusiness(name));
+                    if (name != null) await _finish('business', () => actions.createBusiness(name, id: _businessId));
                   }),
-                  choice(Icons.science_outlined, l10n.tryDemo, l10n.tryDemoHint, () => _finish(actions.createDemo)),
+                  choice(Icons.science_outlined, l10n.tryDemo, l10n.tryDemoHint,
+                      () => _finish('business', actions.createDemo)),
                   if (_busy) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
                 ],
               ),

@@ -173,7 +173,19 @@ class CashbookRepository {
 
   Future<void> renameCashbook(String bookId, String name) => store.update('cashbooks', bookId, {'book_name': name});
 
-  Future<void> deleteCashbook(String bookId) => store.remove('cashbooks', bookId);
+  /// The server tombstones the book's entries, categories, payment methods and
+  /// grants with it; the same happens here at once, without queueing them.
+  Future<void> deleteCashbook(String bookId) => db.transaction(() async {
+        await store.remove('cashbooks', bookId);
+        final now = nowIso();
+        for (final table in const ['entries', 'entry_categories', 'payment_methods', 'cashbook_members']) {
+          await db.customUpdate(
+            'UPDATE "$table" SET deleted_at = ?, updated_at = ? WHERE cashbook_id = ? AND deleted_at IS NULL',
+            variables: [Variable<String>(now), Variable<String>(now), Variable<String>(bookId)],
+            updates: {db.tableByName(table)},
+          );
+        }
+      });
 
   Future<String> addCategory(Cashbook book, String name) => store.create('entry_categories', book.workspaceId, {
         'cashbook_id': book.id,

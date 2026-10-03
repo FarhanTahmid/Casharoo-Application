@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # `dart run drift_dev make-migrations` snapshots each schema version
+          # here and generates step-by-step migrations plus their tests
+          databases:
+            casharoo: lib/core/db/database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/

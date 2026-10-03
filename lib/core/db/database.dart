@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'database.steps.dart';
+
 part 'database.g.dart';
 
 // Column names match the server's sync rows one to one (bookName -> book_name),
@@ -99,10 +101,12 @@ class Transactions extends Table with SyncColumns {
   TextColumn get source => text().withDefault(const Constant('manual'))();
 }
 
+/// No month: the limit for every month. A month (yyyy-MM-01): that month only.
 class Budgets extends Table with SyncColumns {
   TextColumn get categoryId => text()();
   IntColumn get amountMinor => integer()();
   TextColumn get currency => text()();
+  TextColumn get month => text().nullable()();
 }
 
 /// Local changes waiting to be pushed, oldest first.
@@ -137,6 +141,15 @@ class SyncFailures extends Table {
   TextColumn get createdAt => text()();
 }
 
+/// Set once the individual-or-business question is answered for the signed-in account.
+const onboardedSettingKey = 'onboarded';
+
+/// The onboarding answer ('personal' or 'business') until the server has it.
+const onboardingUnsentKey = 'onboarding_unsent';
+
+/// Server address chosen in Settings (test builds only); unset means AppConfig.apiUrl.
+const serverUrlSettingKey = 'server_url';
+
 /// Small per-device settings: language, theme, selected workspace.
 class Settings extends Table {
   TextColumn get key => text()();
@@ -153,8 +166,19 @@ class Settings extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'casharoo'));
 
+  // Every change: bump this, run `dart run drift_dev make-migrations`, add the
+  // step below. The generated tests in test/drift/ check each step.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: stepByStep(
+          from1To2: (m, schema) async {
+            await m.addColumn(schema.budgets, schema.budgets.month);
+          },
+        ),
+      );
 
   /// Synced tables in the order rows must be applied: parents before children.
   static const syncedTables = [
