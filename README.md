@@ -11,19 +11,21 @@ local SQLite database (Drift) and synced with the API in the background.
 | `config/` | Per-flavour settings: `FLAVOR`, `API_URL`, `GOOGLE_SERVER_CLIENT_ID`, `FEEDBACK_EMAIL` |
 | `drift_schemas/` | Snapshot of every database schema version, for migrations and their tests |
 | `docs/release.md` | Signing, building each flavour, the final app ID, the closed beta |
-| `tool/` | `set_app_id.py` (final application ID), `make_icons.py` (placeholder launcher icons) |
+| `assets/brand/` | Spendroo logos, copied from `Spendroo Business Files/Brand/Spendroo Logo` |
+| `tool/` | `set_app_id.py` (changes the application ID), `make_icons.py` (launcher icons from the brand kit) |
 
 ## Run
 
-Three flavours, each installable side by side: `dev` (`com.example.spendroo.dev`),
-`staging` (`.stg`) and `prod`. Pair the flavour with its config file:
+Three flavours, each installable side by side: `dev` (`com.spendroo.app.dev`),
+`staging` (`com.spendroo.app.stg`) and `prod` (`com.spendroo.app`). Pair the flavour with its config file:
 
 ```
 flutter run --flavor dev --dart-define-from-file=config/dev.json
 ```
 
 VS Code has these as launch configurations. The app ID lives in one place,
-`baseApplicationId` in `android/app/build.gradle.kts`; change it before the first Play upload.
+`baseApplicationId` in `android/app/build.gradle.kts`. It is final once the
+first build is uploaded to Play.
 
 The dev config points at `http://10.0.2.2:8000`, the emulator's address for the
 computer running the API's `runserver`. For a phone on USB, run
@@ -75,3 +77,15 @@ LIVE_API_URL=http://localhost:8000 LIVE_EMAIL=... LIVE_PASSWORD=... flutter test
 - **Every user-visible string** is in both `.arb` files; `test/l10n_test.dart` fails otherwise.
 - **The personal screens share one month** (`selectedMonthProvider`): overview, transactions and the budget calendar move together.
 - **Budgets**: one recurring limit per expense category, plus optional one-month overrides (`month` = `yyyy-MM-01`).
+
+## Branding
+
+The logos, colours and typeface come from `Spendroo Business Files/Brand/Spendroo Logo`
+(see its README). To pick up a new version of the logo:
+
+1. Copy the changed files into `assets/brand/` (in-app logo) and `assets/icon/source/`
+   (`png/mark/spendroo-mark-1024w.png` as `mark-1024.png`, and the
+   `app-icon/android-adaptive/` foreground and monochrome).
+2. `python tool/make_icons.py`, then `dart run flutter_launcher_icons`.
+
+Theme colours are in `lib/core/theme.dart`.

@@ -51,6 +51,8 @@ flutter:
 
   assets:
     - assets/application_logos/png-transparent-google-logo-google-text-trademark-logo.png
+    # Spendroo logos, copied from the brand kit (Spendroo Business Files/Brand)
+    - assets/brand/
 
   fonts:
     # Covers Bengali and Latin, so text looks the same on every device

@@ -216,7 +216,7 @@ class _WorkspaceSheet extends ConsumerWidget {
               subtitle: Text(workspace.isDemo
                   ? l10n.demo
                   : (workspace.kind == 'personal' ? l10n.personal : l10n.business)),
-              trailing: workspace.id == current.id ? const Icon(Icons.check, color: AppTheme.primaryColor) : null,
+              trailing: workspace.id == current.id ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
               onTap: () {
                 ref.read(currentWorkspaceIdProvider.notifier).select(workspace.id);
                 onSwitched();

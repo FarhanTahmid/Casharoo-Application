@@ -10,8 +10,8 @@ import '../../core/ui.dart';
 import 'ledger_repository.dart';
 
 const _chartColors = [
-  AppTheme.primaryColor, AppTheme.accentColor, AppTheme.warningColor, AppTheme.successColor,
-  AppTheme.errorColor, AppTheme.secondaryColor, Colors.teal, Colors.brown,
+  AppTheme.primaryColor, AppTheme.accentColor, AppTheme.secondaryColor, AppTheme.errorColor,
+  Color(0xFF209EF3), Color(0xFF6F32FD), Colors.teal, Colors.brown,
 ];
 
 String accountKindLabel(BuildContext context, String kind) => switch (kind) {

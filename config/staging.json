@@ -1,6 +1,6 @@
 {
   "FLAVOR": "staging",
-  "API_URL": "https://staging-api.spendroo.example",
+  "API_URL": "https://staging-api.spendroo.com",
   "GOOGLE_SERVER_CLIENT_ID": "",
   "FEEDBACK_EMAIL": ""
 }

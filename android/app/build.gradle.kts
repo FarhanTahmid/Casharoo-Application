@@ -18,10 +18,10 @@ plugins {
 
 // The one place the app ID lives. Flavours add a suffix so dev, staging and
 // prod can sit side by side on one phone. Change before the first Play upload.
-val baseApplicationId = "com.example.spendroo"
+val baseApplicationId = "com.spendroo.app"
 
 android {
-    namespace = "com.example.spendroo"
+    namespace = "com.spendroo.app"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 

@@ -6,7 +6,6 @@ import '../../core/auth/auth_repository.dart';
 import '../../core/db/database.dart';
 import '../../core/db/local_store.dart';
 import '../../core/providers.dart';
-import '../../core/theme.dart';
 import '../../core/ui.dart';
 import '../shell/home_shell.dart';
 
@@ -113,7 +112,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.account_balance_wallet_rounded, size: 56, color: AppTheme.primaryColor),
+                  const BrandLogo(),
                   const SizedBox(height: 16),
                   Text(l10n.welcomeTitle, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 32),

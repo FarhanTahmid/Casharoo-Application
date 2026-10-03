@@ -1,4 +1,4 @@
-package com.example.spendroo
+package com.spendroo.app
 
 import io.flutter.embedding.android.FlutterActivity
 

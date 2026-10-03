@@ -132,9 +132,9 @@ class _CalendarGrid extends StatelessWidget {
   final ValueChanged<int> onDayTap;
 
   /// No spending: plain. Within the allowance: green. Up to half again over: amber. Beyond: red.
-  Color? _shade(int spent) {
+  Color? _shade(BuildContext context, int spent) {
     if (spent == 0) return null;
-    if (allowance == 0) return AppTheme.primaryColor.withValues(alpha: 0.15);
+    if (allowance == 0) return Theme.of(context).colorScheme.primary.withValues(alpha: 0.15);
     if (spent <= allowance) return AppTheme.successColor.withValues(alpha: 0.18);
     if (spent * 2 <= allowance * 3) return AppTheme.warningColor.withValues(alpha: 0.28);
     return AppTheme.errorColor.withValues(alpha: 0.25);
@@ -179,11 +179,11 @@ class _CalendarGrid extends StatelessWidget {
                 padding: const EdgeInsets.all(2),
                 child: Material(
                   key: ValueKey('day-$day'),
-                  color: _shade(daily[day] ?? 0) ?? Colors.transparent,
+                  color: _shade(context, daily[day] ?? 0) ?? Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: isCurrentMonth && now.day == day
-                        ? const BorderSide(color: AppTheme.primaryColor, width: 1.5)
+                        ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)
                         : BorderSide.none,
                   ),
                   child: InkWell(
@@ -323,7 +323,7 @@ class _BudgetCard extends ConsumerWidget {
                 value: (item.spentMinor / item.budget.amountMinor).clamp(0, 1).toDouble(),
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(4),
-                color: item.isOver ? AppTheme.errorColor : AppTheme.primaryColor,
+                color: item.isOver ? AppTheme.errorColor : Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 8),
               Text(l10n.spentOf(

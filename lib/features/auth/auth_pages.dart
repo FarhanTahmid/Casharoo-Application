@@ -5,14 +5,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../core/config.dart';
 import '../../core/providers.dart';
-import '../../core/theme.dart';
 import '../../core/ui.dart';
 
 /// Frame shared by the signed-out screens: centred, narrow, scrollable.
 class _AuthScaffold extends StatelessWidget {
-  const _AuthScaffold({required this.title, required this.children, this.subtitle});
+  const _AuthScaffold({required this.children, this.title, this.subtitle});
 
-  final String title;
+  /// Without a title the full logo (mark and name) heads the screen.
+  final String? title;
   final String? subtitle;
   final List<Widget> children;
 
@@ -27,9 +27,13 @@ class _AuthScaffold extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.account_balance_wallet_rounded, size: 56, color: AppTheme.primaryColor),
-                    const SizedBox(height: 16),
-                    Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+                    if (title == null)
+                      const BrandLogo(height: 160, full: true)
+                    else ...[
+                      const BrandLogo(),
+                      const SizedBox(height: 16),
+                      Text(title!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+                    ],
                     if (subtitle != null) ...[
                       const SizedBox(height: 8),
                       Text(subtitle!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
@@ -120,7 +124,6 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return _AuthScaffold(
-      title: l10n.appName,
       subtitle: l10n.tagline,
       children: [
         Form(

@@ -8,8 +8,8 @@
 | `staging` | `<id>.stg` | `config/staging.json` | the staging API (HTTPS) | testers, closed beta stage 1 |
 | `prod` | `<id>` | `config/prod.json` | production (HTTPS) | Play Store |
 
-`<id>` is `baseApplicationId` in `android/app/build.gradle.kts`, currently the
-placeholder `com.example.spendroo`.
+`<id>` is `baseApplicationId` in `android/app/build.gradle.kts`: `com.spendroo.app`
+(the company owns spendroo.com).
 
 Dev and staging builds show **Settings → Server**, where a tester can point the
 app at another API (for example a Cloudflare tunnel to a developer's machine).
@@ -51,16 +51,16 @@ flutter build appbundle --release --flavor prod --dart-define-from-file=config/p
 `--build-number` becomes the Android `versionCode`; every upload needs a higher
 one. The version name comes from `version:` in `pubspec.yaml`.
 
-## Before the first Play upload: the final application ID
+## The application ID
 
-Play never allows the ID to change after the first upload, even to a test track.
+The ID is `com.spendroo.app`. Play never allows it to change after the first
+upload, even to a test track. Before that upload it can still be changed:
 
-1. Choose the ID (reverse domain you control, e.g. `com.spendroo.app`).
-2. `python tool/set_app_id.py <id>` — updates `baseApplicationId`, `namespace`,
+1. `python tool/set_app_id.py <id>` — updates `baseApplicationId`, `namespace`,
    the Kotlin package of `MainActivity.kt` and the iOS bundle IDs.
-3. `flutter clean`, rebuild, run the app.
+2. `flutter clean`, rebuild, run the app.
 
-### After changing the ID
+### Accounts that must match the ID
 
 - **Google sign-in:** create Android OAuth clients in Google Cloud for
   `<id>`, `<id>.stg` and `<id>.dev`, each with the SHA-1 of the key that signs
@@ -70,8 +70,10 @@ Play never allows the ID to change after the first upload, even to a test track.
   `WEB_OAUTH2_CLIENT_ID`/`ANDROID_OAUTH2_CLIENT_ID`.
 - **Firebase (push, Phase 3+):** register the new IDs and download fresh
   `google-services.json` / `GoogleService-Info.plist`. The ones on disk are for
-  the placeholder ID.
-- **API:** set `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` for the real domain.
+  the old placeholder ID (`com.example.casharoo`), so they are not used.
+- **API:** production is `https://api.spendroo.com` and staging
+  `https://staging-api.spendroo.com` (`config/prod.json`, `config/staging.json`);
+  set the API's `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` to match.
 
 ## Closed beta
 
@@ -90,9 +92,9 @@ update **Settings → Server**. A named tunnel on a real domain removes this ste
 
 ### Stage 2 — Play closed testing (needs the founder's accounts)
 
-- [ ] Final application ID chosen and applied (above)
+- [x] Final application ID chosen and applied (`com.spendroo.app`)
 - [ ] Play Console developer account
-- [ ] Privacy policy URL, Data safety form, content rating, app category
+- [ ] Privacy policy URL (e.g. `https://spendroo.com/privacy`), Data safety form, content rating, app category
 - [ ] Upload keystore created; Play App Signing enabled on first upload
 - [ ] Stable staging host (named tunnel or server) in a `config/beta.json`, or production live
 - [ ] Google OAuth clients for the new IDs

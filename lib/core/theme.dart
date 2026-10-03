@@ -3,15 +3,20 @@ import 'package:flutter/services.dart';
 
 // App Theme Configuration
 class AppTheme {
-  // App Colors
-  static const Color primaryColor = Color.fromARGB(255, 19, 106, 238);
-  static const Color secondaryColor = Color.fromARGB(255, 32, 158, 243);
-  static const Color accentColor = Color.fromARGB(255, 111, 50, 253);
+  // Brand colours (Spendroo Business Files/Brand/Spendroo Logo/README.md)
+  static const Color primaryColor = Color(0xFF0B2D5E); // Trust Navy
+  static const Color secondaryColor = Color(0xFF2DB86F); // Money Green
+  static const Color accentColor = Color(0xFFF5B530); // Prosperity Gold
+  static const Color mintColor = Color(0xFF5BE3A0); // Growth Mint
+  /// Navy is too dark to read on the dark theme's background; this lighter
+  /// shade of it takes the primary role there.
+  static const Color darkPrimaryColor = Color(0xFF8FB2EA);
+
   static const Color backgroundColor = Color(0xFFFAFAFA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFEF4444);
-  static const Color successColor = Color(0xFF10B981);
-  static const Color warningColor = Color(0xFFF59E0B);
+  static const Color successColor = secondaryColor;
+  static const Color warningColor = accentColor;
 
   // Text Colors
   static const Color textPrimary = Color(0xFF111827);
@@ -45,12 +50,12 @@ class AppTheme {
     brightness: Brightness.dark,
     background: darkBackgroundColor,
     scheme: const ColorScheme.dark(
-      primary: primaryColor,
+      primary: darkPrimaryColor,
       secondary: secondaryColor,
       tertiary: accentColor,
       surface: darkSurfaceColor,
       error: errorColor,
-      onPrimary: Colors.white,
+      onPrimary: primaryColor,
       onSecondary: Colors.white,
       onSurface: darkTextPrimary,
       onError: Colors.white,
@@ -62,7 +67,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      primaryColor: primaryColor,
+      primaryColor: scheme.primary,
       scaffoldBackgroundColor: background,
       fontFamily: fontFamily,
       colorScheme: scheme,
@@ -91,7 +96,7 @@ class AppTheme {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor),
+          borderSide: BorderSide(color: scheme.primary),
         ),
         contentPadding: const EdgeInsets.all(16),
       ),

@@ -57,6 +57,26 @@ Future<String?> promptText(BuildContext context, {required String title, String?
   ).then((value) => value == null || value.isEmpty ? null : value);
 }
 
+/// The Spendroo logo from assets/brand. [full] adds the wordmark (white on
+/// dark backgrounds); otherwise only the wallet mark.
+class BrandLogo extends StatelessWidget {
+  const BrandLogo({super.key, this.height = 64, this.full = false});
+
+  final double height;
+  final bool full;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final asset = !full
+        ? 'assets/brand/spendroo-mark-512w.png'
+        : dark
+            ? 'assets/brand/spendroo-logo-stacked-reverse-800w.png'
+            : 'assets/brand/spendroo-logo-stacked-800w.png';
+    return Image.asset(asset, height: height, semanticLabel: context.l10n.appName);
+  }
+}
+
 class EmptyState extends StatelessWidget {
   const EmptyState({super.key, required this.icon, required this.message});
 
