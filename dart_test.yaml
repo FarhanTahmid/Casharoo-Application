@@ -1,0 +1,4 @@
+tags:
+  # Talks to a running API; see README "Tests". Run with: flutter test --run-skipped -t live
+  live:
+    skip: "needs a running API (LIVE_API_URL, LIVE_EMAIL, LIVE_PASSWORD)"

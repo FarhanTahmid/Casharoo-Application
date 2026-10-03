@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Staging and prod talk to the API over HTTPS only. The dev flavour
+     overrides this file (src/dev/res/xml) to allow a local server. -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.0.123</domain>
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>

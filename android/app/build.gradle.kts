@@ -11,17 +11,18 @@ if (keystorePropertiesFile.exists()) {
 
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// The one place the app ID lives. Flavours add a suffix so dev, staging and
+// prod can sit side by side on one phone. Change before the first Play upload.
+val baseApplicationId = "com.example.casharoo"
+
 android {
     namespace = "com.example.casharoo"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -34,14 +35,33 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.casharoo"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = baseApplicationId
         minSdk = 24
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // Pair each flavour with its config/<flavour>.json for the Dart side:
+    //   flutter run --flavor dev --dart-define-from-file=config/dev.json
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Casharoo Dev")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".stg"
+            versionNameSuffix = "-stg"
+            resValue("string", "app_name", "Casharoo Staging")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Casharoo")
+        }
     }
 
     signingConfigs {
