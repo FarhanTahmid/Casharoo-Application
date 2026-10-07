@@ -13,6 +13,41 @@ class Money {
   /// Currencies whose users group digits as 1,00,000 (lakh) instead of 100,000.
   static const _lakhCurrencies = {'BDT', 'INR', 'PKR', 'NPR', 'LKR'};
 
+  /// Currencies offered in pickers, most used here first: code -> English name.
+  /// Any other ISO 4217 code a row already carries still formats and parses.
+  static const currencies = {
+    'BDT': 'Bangladeshi Taka',
+    'USD': 'US Dollar',
+    'EUR': 'Euro',
+    'GBP': 'British Pound',
+    'INR': 'Indian Rupee',
+    'AED': 'UAE Dirham',
+    'SAR': 'Saudi Riyal',
+    'MYR': 'Malaysian Ringgit',
+    'SGD': 'Singapore Dollar',
+    'CAD': 'Canadian Dollar',
+    'AUD': 'Australian Dollar',
+    'JPY': 'Japanese Yen',
+    'CNY': 'Chinese Yuan',
+    'PKR': 'Pakistani Rupee',
+    'NPR': 'Nepalese Rupee',
+    'LKR': 'Sri Lankan Rupee',
+    'QAR': 'Qatari Riyal',
+    'KWD': 'Kuwaiti Dinar',
+    'OMR': 'Omani Rial',
+    'BHD': 'Bahraini Dinar',
+    'TRY': 'Turkish Lira',
+    'THB': 'Thai Baht',
+    'IDR': 'Indonesian Rupiah',
+    'KRW': 'South Korean Won',
+    'HKD': 'Hong Kong Dollar',
+    'NZD': 'New Zealand Dollar',
+    'CHF': 'Swiss Franc',
+    'SEK': 'Swedish Krona',
+    'ZAR': 'South African Rand',
+    'EGP': 'Egyptian Pound',
+  };
+
   static const _bengaliDigits = '০১২৩৪৫৬৭৮৯';
 
   static int exponent(String currency) => _exponents[currency] ?? 2;
@@ -81,6 +116,41 @@ class Money {
     return int.parse('${whole.isEmpty ? '0' : whole}${fraction.padRight(digits, '0')}');
   }
 
+  static final _operatorPattern = RegExp(r'[-+*/%()]');
+
+  static String _normalise(String input) => toAsciiDigits(input)
+      .replaceAll(RegExp(r'[,\s]'), '')
+      .replaceAll('×', '*')
+      .replaceAll('÷', '/')
+      .replaceAll('−', '-');
+
+  /// True when [input] is a sum to work out ("1200+350") and not a plain amount.
+  static bool isExpression(String input) => _operatorPattern.hasMatch(_normalise(input));
+
+  /// Works out what a person typed on the keypad ("1200+350×2", "850−10%")
+  /// into minor units, rounding half up. A plain amount goes through [parse].
+  /// An operator left at the end is ignored, so "1200+" is 1200 while typing.
+  /// Returns null when it cannot be worked out or is not a non-negative amount
+  /// the currency can hold. Exact fractions throughout: no doubles.
+  static int? evaluate(String input, String currency) {
+    final text = _normalise(input).replaceFirst(RegExp(r'[-+*/(.]+$'), '');
+    if (!_operatorPattern.hasMatch(text)) return parse(text, currency);
+    if (text.length > 64) return null;
+    final _Fraction value;
+    try {
+      value = _Calculator(text).run();
+    } on FormatException {
+      return null;
+    }
+    if (value.numerator.isNegative) return null;
+    final digits = exponent(currency);
+    final two = BigInt.two;
+    final minor = (value.numerator * BigInt.from(_pow10(digits)) * two + value.denominator) ~/ (value.denominator * two);
+    // The same ceiling as parse: 15 whole digits
+    if (minor >= BigInt.from(10).pow(15 + digits)) return null;
+    return minor.toInt();
+  }
+
   static String toAsciiDigits(String text) {
     final buffer = StringBuffer();
     for (final rune in text.runes) {
@@ -99,5 +169,115 @@ class Money {
       result *= 10;
     }
     return result;
+  }
+}
+
+/// An exact number: [numerator] over a positive [denominator], in lowest terms.
+class _Fraction {
+  _Fraction._(this.numerator, this.denominator);
+
+  factory _Fraction(BigInt numerator, BigInt denominator) {
+    if (denominator == BigInt.zero) throw const FormatException('division by zero');
+    if (denominator.isNegative) {
+      numerator = -numerator;
+      denominator = -denominator;
+    }
+    final divisor = numerator.gcd(denominator);
+    return divisor <= BigInt.one
+        ? _Fraction._(numerator, denominator)
+        : _Fraction._(numerator ~/ divisor, denominator ~/ divisor);
+  }
+
+  final BigInt numerator;
+  final BigInt denominator;
+
+  static final hundred = _Fraction(BigInt.from(100), BigInt.one);
+
+  _Fraction operator +(_Fraction o) =>
+      _Fraction(numerator * o.denominator + o.numerator * denominator, denominator * o.denominator);
+  _Fraction operator -(_Fraction o) =>
+      _Fraction(numerator * o.denominator - o.numerator * denominator, denominator * o.denominator);
+  _Fraction operator *(_Fraction o) => _Fraction(numerator * o.numerator, denominator * o.denominator);
+  _Fraction operator /(_Fraction o) => _Fraction(numerator * o.denominator, denominator * o.numerator);
+  _Fraction operator -() => _Fraction._(-numerator, denominator);
+}
+
+/// Reads "1200+350*2" the way a calculator does: × and ÷ before + and −,
+/// brackets first, and "850-10%" taking ten percent of the 850.
+class _Calculator {
+  _Calculator(this.text);
+
+  final String text;
+  int _at = 0;
+
+  /// Set by [_value] when what it just read ended in a percent sign.
+  bool _percent = false;
+
+  String? get _next => _at < text.length ? text[_at] : null;
+
+  _Fraction run() {
+    final value = _sum();
+    if (_at != text.length) throw const FormatException('unexpected character');
+    return value;
+  }
+
+  _Fraction _sum() {
+    var total = _product();
+    while (_next == '+' || _next == '-') {
+      final minus = text[_at++] == '-';
+      final from = _at;
+      var term = _product();
+      // "a + b%": the percent is of a, when b% stands alone as the term
+      if (_percent && _isLonePercent(from)) term = total * term;
+      total = minus ? total - term : total + term;
+    }
+    return total;
+  }
+
+  bool _isLonePercent(int from) => RegExp(r'^[\d.]+%$').hasMatch(text.substring(from, _at));
+
+  _Fraction _product() {
+    var total = _signed();
+    while (_next == '*' || _next == '/') {
+      final divide = text[_at++] == '/';
+      final factor = _signed();
+      total = divide ? total / factor : total * factor;
+    }
+    return total;
+  }
+
+  _Fraction _signed() {
+    if (_next == '-') {
+      _at++;
+      return -_signed();
+    }
+    return _value();
+  }
+
+  _Fraction _value() {
+    _Fraction value;
+    if (_next == '(') {
+      _at++;
+      value = _sum();
+      // A bracket still open at the end closes itself
+      if (_next == ')') {
+        _at++;
+      } else if (_at != text.length) {
+        throw const FormatException('missing bracket');
+      }
+    } else {
+      final match = RegExp(r'(\d*)(?:\.(\d*))?').matchAsPrefix(text, _at)!;
+      final whole = match.group(1) ?? '';
+      final fraction = match.group(2) ?? '';
+      if (whole.isEmpty && fraction.isEmpty) throw const FormatException('number expected');
+      _at = match.end;
+      value = _Fraction(BigInt.parse('$whole$fraction'.padLeft(1, '0')), BigInt.from(10).pow(fraction.length));
+    }
+    _percent = _next == '%';
+    if (_percent) {
+      _at++;
+      value = value / _Fraction.hundred;
+    }
+    return value;
   }
 }

@@ -29,17 +29,19 @@ class CategoriesPage extends ConsumerWidget {
             builder: (categories) => TabBarView(
               children: [
                 for (final kind in const ['expense', 'income'])
-                  _CategoryList(categories: categories.where((c) => c.kind == kind).toList()),
+                  _CategoryList(categories: categories.where((c) => c.kind == kind).toList(), kind: kind),
               ],
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_rounded),
             label: Text(l10n.newCategory),
             onPressed: () async {
               final kind = DefaultTabController.of(context).index == 0 ? 'expense' : 'income';
               final name = await promptText(context, title: l10n.newCategory, label: l10n.categoryName);
-              if (name != null) await ref.read(ledgerRepositoryProvider).addCategory(workspace.id, name, kind);
+              if (name == null) return;
+              await ref.read(ledgerRepositoryProvider).addCategory(workspace.id, name, kind);
+              if (context.mounted) showEventBurst(context, AppEvent.saved);
             },
           ),
         ),
@@ -49,41 +51,52 @@ class CategoriesPage extends ConsumerWidget {
 }
 
 class _CategoryList extends ConsumerWidget {
-  const _CategoryList({required this.categories});
+  const _CategoryList({required this.categories, required this.kind});
 
   final List<Category> categories;
+  final String kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final repo = ref.read(ledgerRepositoryProvider);
-    if (categories.isEmpty) return EmptyState(icon: Icons.category_outlined, message: l10n.noCategories);
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 96),
-      itemCount: categories.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        return ListTile(
-          title: Text(category.name),
-          onTap: () async {
-            final name = await promptText(context,
-                title: l10n.renameCategory, label: l10n.categoryName, initial: category.name);
-            if (name != null) await repo.renameCategory(category, name);
-          },
-          trailing: IconButton(
-            tooltip: l10n.delete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final count = await repo.transactionCount(category.id);
-              if (!context.mounted) return;
-              if (await confirm(context, l10n.deleteCategoryConfirm(category.name, count))) {
-                await repo.deleteCategory(category);
-              }
-            },
+    if (categories.isEmpty) return EmptyState(icon: Icons.sell_outlined, message: l10n.noCategories);
+    final tint = context.amountColor(kind == 'income');
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(AppSpace.page, AppSpace.lg, AppSpace.page, 96),
+      children: [
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (final (index, category) in categories.indexed) ...[
+                if (index > 0) const Divider(indent: 68),
+                ListTile(
+                  leading: IconBadge(Icons.sell_outlined, color: tint, size: 36),
+                  title: Text(category.name),
+                  onTap: () async {
+                    final name = await promptText(context,
+                        title: l10n.renameCategory, label: l10n.categoryName, initial: category.name);
+                    if (name != null) await repo.renameCategory(category, name);
+                  },
+                  trailing: IconButton(
+                    tooltip: l10n.delete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    onPressed: () async {
+                      final count = await repo.transactionCount(category.id);
+                      if (!context.mounted) return;
+                      if (await confirm(context, l10n.deleteCategoryConfirm(category.name, count))) {
+                        await repo.deleteCategory(category);
+                        if (context.mounted) showEventBurst(context, AppEvent.deleted);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ],
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

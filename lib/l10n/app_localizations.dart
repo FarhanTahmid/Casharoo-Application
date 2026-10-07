@@ -608,6 +608,42 @@ abstract class AppLocalizations {
   /// **'Currency'**
   String get currency;
 
+  /// No description provided for @defaultCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency'**
+  String get defaultCurrency;
+
+  /// No description provided for @defaultCurrencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New accounts, cashbooks and budgets start in it, and totals are shown in it. What you already have keeps its own.'**
+  String get defaultCurrencyHint;
+
+  /// No description provided for @currencyFixedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The currency cannot be changed after this is created.'**
+  String get currencyFixedHint;
+
+  /// No description provided for @keypadClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get keypadClear;
+
+  /// No description provided for @keypadBackspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete last'**
+  String get keypadBackspace;
+
+  /// No description provided for @keypadDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get keypadDone;
+
   /// No description provided for @openingBalance.
   ///
   /// In en, this message translates to:
@@ -1105,6 +1141,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @searchTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by note, category or amount'**
+  String get searchTransactions;
+
+  /// No description provided for @searchOrCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or type a new name'**
+  String get searchOrCreate;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @noResultsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches \"{query}\".'**
+  String noResultsFor(String query);
+
+  /// No description provided for @noMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches.'**
+  String get noMatches;
+
+  /// No description provided for @createNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Create \"{name}\"'**
+  String createNamed(String name);
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @paceLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} left to spend'**
+  String paceLeft(String amount);
+
+  /// No description provided for @paceOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} over budget'**
+  String paceOver(String amount);
 }
 
 class _AppLocalizationsDelegate

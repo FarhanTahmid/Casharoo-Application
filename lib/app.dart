@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/auth/auth_repository.dart';
 import 'core/providers.dart';
-import 'core/theme.dart';
+import 'core/ui.dart';
 import 'features/auth/auth_pages.dart';
 import 'features/cashbook/cashbook_pages.dart';
 import 'features/onboarding/onboarding_page.dart';
@@ -49,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (_, _) => const Scaffold(body: Center(child: CircularProgressIndicator())),
+        builder: (_, _) => const _SplashPage(),
       ),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(path: '/signup', builder: (_, _) => const LoginPage(signUp: true)),
@@ -70,6 +70,35 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Shown while the app finds out who is signed in: the logo settles in, then the loader.
+class _SplashPage extends StatelessWidget {
+  const _SplashPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Scaffold(
+      backgroundColor: colors.header,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.7, end: 1),
+              duration: context.motion(const Duration(milliseconds: 450)),
+              curve: AppMotion.spring,
+              builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+              child: const BrandLogo(layout: BrandLayout.stacked, onDark: true, height: 190),
+            ),
+            const SizedBox(height: 32),
+            AppLoader(color: colors.mint),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class SpendrooApp extends ConsumerWidget {
   const SpendrooApp({super.key});
@@ -93,6 +122,8 @@ class SpendrooApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: ref.watch(routerProvider),
+      // Above every route and sheet, so the amount keypad can sit under all of them
+      builder: (context, child) => AmountKeypadHost(child: child!),
     );
   }
 }

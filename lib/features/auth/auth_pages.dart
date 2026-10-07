@@ -7,69 +7,116 @@ import '../../core/config.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 
-/// Frame shared by the signed-out screens: centred, narrow, scrollable.
+/// Frame shared by the signed-out screens: the logo on the navy field, and the
+/// form on a white sheet below it. The header shrinks when the keyboard opens,
+/// so the fields and the button stay in view.
 class _AuthScaffold extends StatelessWidget {
   const _AuthScaffold({required this.children, this.title, this.subtitle});
 
-  /// Without a title the full logo (mark and name) heads the screen.
+  /// Without a title the logo and the app's name head the screen.
   final String? title;
   final String? subtitle;
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final text = Theme.of(context).textTheme;
+    final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final heading = text.headlineSmall?.copyWith(color: colors.onHeader);
+
+    // The logo with its name where the screen has no title of its own; the mark alone beside a title
+    final Widget header = typing
+        ? Row(
+            key: const ValueKey('compact'),
+            children: [
+              if (title == null)
+                const BrandLogo(layout: BrandLayout.horizontal, onDark: true, height: 48)
+              else ...[
+                const BrandLogo(height: 40),
+                const SizedBox(width: 12),
+                Expanded(child: Text(title!, style: text.titleLarge?.copyWith(color: colors.onHeader))),
+              ],
+            ],
+          )
+        : Column(
+            key: const ValueKey('full'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              if (title == null)
+                const BrandLogo(layout: BrandLayout.horizontal, onDark: true, height: 84)
+              else ...[
+                const BrandLogo(height: 60),
+                const SizedBox(height: 18),
+                Text(title!, style: heading),
+              ],
+              if (subtitle != null) ...[
+                SizedBox(height: title == null ? 14 : 6),
+                Text(subtitle!, style: text.bodyLarge?.copyWith(color: colors.onHeaderMuted)),
+              ],
+              const SizedBox(height: 10),
+            ],
+          );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: colors.header,
         body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (title == null)
-                      const BrandLogo(height: 160, full: true)
-                    else ...[
-                      const BrandLogo(),
-                      const SizedBox(height: 16),
-                      Text(title!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
-                    ],
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 8),
-                      Text(subtitle!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-                    ],
-                    const SizedBox(height: 32),
-                    ...children,
-                  ],
+          bottom: false,
+          child: PassbookBody(
+            header: AnimatedSize(
+              duration: context.motion(AppMotion.emphasised),
+              curve: AppMotion.ease,
+              alignment: Alignment.topLeft,
+              child: SizedBox(width: double.infinity, child: header),
+            ),
+            child: ColoredBox(
+              color: colors.sheet,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(24, 28, 24, 24 + MediaQuery.paddingOf(context).bottom),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 /// Runs an auth request with a busy state and shows what the server said if it failed.
 mixin _Submitting<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   final formKey = GlobalKey<FormState>();
   bool busy = false;
+  int _refused = 0;
 
   Future<bool> submit(Future<String?> Function() action) async {
-    if (!(formKey.currentState?.validate() ?? true)) return false;
+    if (!(formKey.currentState?.validate() ?? true)) {
+      setState(() => _refused++);
+      return false;
+    }
     setState(() => busy = true);
     final error = await action();
     if (!mounted) return false;
-    setState(() => busy = false);
+    setState(() {
+      busy = false;
+      if (error != null) _refused++;
+    });
     if (error != null) context.showMessage(authErrorText(context, error));
     return error == null;
   }
 
-  Widget submitButton(String label, VoidCallback onPressed) => FilledButton(
-        onPressed: busy ? null : onPressed,
-        child: busy
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : Text(label),
-      );
+  /// Shakes when the form or the server says no.
+  Widget submitButton(String label, VoidCallback onPressed) =>
+      Shake(trigger: _refused, child: BusyButton(label: label, busy: busy, onPressed: onPressed));
 }
 
 String? _validateEmail(BuildContext context, String? value) =>
@@ -134,18 +181,26 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
               TextFormField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.email],
-                decoration: InputDecoration(labelText: l10n.email),
+                decoration: InputDecoration(labelText: l10n.email, prefixIcon: const Icon(Icons.mail_outline_rounded)),
                 validator: (value) => _validateEmail(context, value),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _password,
                 obscureText: _obscure,
+                autofillHints: [widget.signUp ? AutofillHints.newPassword : AutofillHints.password],
                 decoration: InputDecoration(
                   labelText: l10n.password,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                    icon: PopSwitcher(
+                      child: Icon(
+                        _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        key: ValueKey(_obscure),
+                      ),
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
@@ -159,8 +214,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(onPressed: () => context.go('/forgot'), child: Text(l10n.forgotPassword)),
-          ),
-        const SizedBox(height: 16),
+          )
+        else
+          const SizedBox(height: 16),
+        const SizedBox(height: 4),
         submitButton(widget.signUp ? l10n.signUp : l10n.logIn, _submit),
         if (AppConfig.googleServerClientId.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -173,7 +230,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
             label: Text(l10n.continueWithGoogle),
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         TextButton(
           onPressed: () => context.go(widget.signUp ? '/login' : '/signup'),
           child: Text(widget.signUp ? l10n.haveAccount : l10n.noAccount),
@@ -213,15 +270,17 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> with _Submitt
           key: formKey,
           child: TextFormField(
             controller: _code,
+            autofocus: true,
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.characters,
-            style: const TextStyle(fontSize: 24, letterSpacing: 4),
+            style: const TextStyle(fontSize: 26, letterSpacing: 8, fontWeight: FontWeight.w600, fontFeatures: tabularFigures),
             decoration: InputDecoration(labelText: l10n.code),
             validator: (value) => (value ?? '').trim().isEmpty ? l10n.code : null,
           ),
         ),
         const SizedBox(height: 16),
         submitButton(l10n.verify, () => submit(() => auth.verifyEmail(_code.text))),
+        const SizedBox(height: 4),
         TextButton(
           onPressed: busy
               ? null
@@ -265,7 +324,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with _S
           child: TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(labelText: l10n.email),
+            autofillHints: const [AutofillHints.email],
+            decoration: InputDecoration(labelText: l10n.email, prefixIcon: const Icon(Icons.mail_outline_rounded)),
             validator: (value) => _validateEmail(context, value),
           ),
         ),
@@ -274,6 +334,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with _S
           l10n.sendCode,
           () => submit(() => ref.read(authControllerProvider.notifier).requestPasswordReset(_email.text.trim())),
         ),
+        const SizedBox(height: 4),
         TextButton(onPressed: () => context.go('/login'), child: Text(l10n.logIn)),
       ],
     );
@@ -314,14 +375,18 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> with _Sub
               TextFormField(
                 controller: _code,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(labelText: l10n.code),
+                decoration: InputDecoration(labelText: l10n.code, prefixIcon: const Icon(Icons.pin_outlined)),
                 validator: (value) => (value ?? '').trim().isEmpty ? l10n.code : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _password,
                 obscureText: true,
-                decoration: InputDecoration(labelText: l10n.newPassword),
+                autofillHints: const [AutofillHints.newPassword],
+                decoration: InputDecoration(
+                  labelText: l10n.newPassword,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                ),
                 validator: (value) => _validatePassword(context, value),
               ),
             ],
@@ -333,6 +398,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> with _Sub
             context.showMessage(l10n.passwordChanged);
           }
         }),
+        const SizedBox(height: 4),
         TextButton(onPressed: busy ? null : auth.logOut, child: Text(l10n.cancel)),
       ],
     );

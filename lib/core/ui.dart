@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import 'design/tokens.dart';
 import 'money.dart';
 import 'theme.dart';
+
+export 'package:flutter/services.dart' show HapticFeedback, SystemUiOverlayStyle;
+
+export 'design/amounts.dart';
+export 'design/buttons.dart';
+export 'design/fields.dart';
+export 'design/keypad.dart';
+export 'design/layout.dart';
+export 'design/loaders.dart';
+export 'design/motion.dart';
+export 'design/rows.dart';
+export 'design/segmented.dart';
+export 'design/select_field.dart';
+export 'design/sheets.dart';
+export 'design/tokens.dart';
+export 'theme.dart';
 
 extension ContextX on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
@@ -12,6 +28,9 @@ extension ContextX on BuildContext {
 
   /// Amount for display in the current language.
   String money(int amountMinor, String currency) => Money.format(amountMinor, currency, locale: languageCode);
+
+  /// Text-safe green for money in, red for money out.
+  Color amountColor(bool isIn) => isIn ? colors.moneyIn : colors.moneyOut;
 
   void showMessage(String message) {
     ScaffoldMessenger.of(this)
@@ -23,181 +42,47 @@ extension ContextX on BuildContext {
 /// Turns the 'offline' marker from the auth controller into a sentence.
 String authErrorText(BuildContext context, String error) => error == 'offline' ? context.l10n.offlineError : error;
 
-Future<bool> confirm(BuildContext context, String message, {String? action}) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action ?? context.l10n.delete)),
-        ],
-      ),
-    ) ??
-    false;
+/// Which arrangement of the logo: the wallet alone, or with the name beside or under it.
+enum BrandLayout { mark, horizontal, stacked }
 
-/// Asks for one line of text. Returns null when cancelled or left empty.
-Future<String?> promptText(BuildContext context, {required String title, String? label, String initial = ''}) {
-  final controller = TextEditingController(text: initial);
-  return showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: InputDecoration(labelText: label),
-        onSubmitted: (value) => Navigator.pop(context, value.trim()),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: Text(context.l10n.save)),
-      ],
-    ),
-  ).then((value) => value == null || value.isEmpty ? null : value);
-}
-
-/// The Spendroo logo from assets/brand. [full] adds the wordmark (white on
-/// dark backgrounds); otherwise only the wallet mark.
+/// The Spendroo logo from assets/brand, used as the logo kit's README says:
+/// the mark where space is tight, the horizontal logo in headers (never under
+/// 120 wide), the stacked one for splash screens. On the navy header or the
+/// dark theme ([onDark]) the "reverse" artwork with the white wordmark is used.
 class BrandLogo extends StatelessWidget {
-  const BrandLogo({super.key, this.height = 64, this.full = false});
+  const BrandLogo({super.key, this.height = 64, this.layout = BrandLayout.mark, this.onDark});
 
   final double height;
-  final bool full;
+  final BrandLayout layout;
+
+  /// Null follows the theme; pass true on the navy header.
+  final bool? onDark;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final asset = !full
-        ? 'assets/brand/spendroo-mark-512w.png'
-        : dark
-            ? 'assets/brand/spendroo-logo-stacked-reverse-800w.png'
-            : 'assets/brand/spendroo-logo-stacked-800w.png';
+    final reverse = (onDark ?? Theme.of(context).brightness == Brightness.dark) ? '-reverse' : '';
+    final asset = switch (layout) {
+      BrandLayout.mark => 'assets/brand/spendroo-mark-512w.png',
+      BrandLayout.horizontal => 'assets/brand/spendroo-logo-horizontal$reverse-800w.png',
+      BrandLayout.stacked => 'assets/brand/spendroo-logo-stacked$reverse-800w.png',
+    };
     return Image.asset(asset, height: height, semanticLabel: context.l10n.appName);
   }
 }
 
-class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 56, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
-              const SizedBox(height: 16),
-              Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
-            ],
-          ),
-        ),
-      );
-}
-
-/// Renders a stream-backed provider: spinner while loading, the error if it fails.
-class AsyncView<T> extends StatelessWidget {
-  const AsyncView({super.key, required this.value, required this.builder});
-
-  final AsyncValue<T> value;
-  final Widget Function(T data) builder;
-
-  @override
-  Widget build(BuildContext context) => value.when(
-        data: builder,
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-      );
-}
-
-/// Green for money in, red for money out.
+/// Fill colours: green for money in, red for money out. For text use `context.amountColor`.
 Color amountColor(bool isIn) => isIn ? AppTheme.successColor : AppTheme.errorColor;
-
-/// Field for typing an amount in major units ("1250.50").
-class AmountField extends StatelessWidget {
-  const AmountField({super.key, required this.controller, required this.currency, this.label, this.allowZero = false});
-
-  final TextEditingController controller;
-  final String currency;
-  final String? label;
-  final bool allowZero;
-
-  @override
-  Widget build(BuildContext context) => TextFormField(
-        controller: controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(labelText: label ?? context.l10n.amount, prefixText: Money.symbol(currency)),
-        validator: (value) {
-          final amount = Money.parse(value ?? '', currency);
-          return amount == null || (amount == 0 && !allowZero) ? context.l10n.amountInvalid : null;
-        },
-      );
-}
-
-/// Tappable field that opens a date picker. Dates are ISO strings (yyyy-MM-dd).
-class DateField extends StatelessWidget {
-  const DateField({super.key, required this.value, required this.onChanged});
-
-  final String value;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: DateTime.parse(value),
-            firstDate: DateTime(2000),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-          );
-          if (picked != null) onChanged(picked.toIso8601String().substring(0, 10));
-        },
-        child: InputDecorator(
-          decoration: InputDecoration(labelText: context.l10n.date, suffixIcon: const Icon(Icons.calendar_today)),
-          child: Text(formatDate(context, value)),
-        ),
-      );
-}
-
-/// "‹ October 2026 ›": steps a month back or forward. [month] is any day in the month.
-class MonthSwitcher extends StatelessWidget {
-  const MonthSwitcher({super.key, required this.month, required this.onChanged});
-
-  final DateTime month;
-  final ValueChanged<DateTime> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            tooltip: context.l10n.previousMonth,
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () => onChanged(DateTime(month.year, month.month - 1)),
-          ),
-          SizedBox(
-            width: 180,
-            child: Text(
-              MaterialLocalizations.of(context).formatMonthYear(month),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          IconButton(
-            tooltip: context.l10n.nextMonth,
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () => onChanged(DateTime(month.year, month.month + 1)),
-          ),
-        ],
-      );
-}
 
 /// "1 Oct 2026", with Bengali month names and digits in Bangla.
 String formatDate(BuildContext context, String isoDate) =>
     MaterialLocalizations.of(context).formatMediumDate(DateTime.parse(isoDate));
+
+/// "Today", "Yesterday", or the date.
+String friendlyDate(BuildContext context, String isoDate) {
+  final today = todayIso();
+  if (isoDate == today) return context.l10n.today;
+  final yesterday = DateTime.now().subtract(const Duration(days: 1)).toIso8601String().substring(0, 10);
+  return isoDate == yesterday ? context.l10n.yesterday : formatDate(context, isoDate);
+}
 
 String todayIso() => DateTime.now().toIso8601String().substring(0, 10);

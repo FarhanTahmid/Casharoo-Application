@@ -92,6 +92,12 @@
   "kindMobileMoney": "মোবাইল ব্যাংকিং",
   "kindCard": "কার্ড",
   "currency": "মুদ্রা",
+  "defaultCurrency": "ডিফল্ট মুদ্রা",
+  "defaultCurrencyHint": "নতুন অ্যাকাউন্ট, ক্যাশবুক ও বাজেট এই মুদ্রায় শুরু হবে, মোট হিসাবও এতে দেখাবে। আগের গুলো নিজের মুদ্রায় থাকবে।",
+  "currencyFixedHint": "তৈরি করার পর মুদ্রা আর বদলানো যাবে না।",
+  "keypadClear": "মুছুন",
+  "keypadBackspace": "শেষেরটি মুছুন",
+  "keypadDone": "হয়ে গেছে",
   "openingBalance": "প্রারম্ভিক ব্যালেন্স",
   "nameRequired": "নাম লিখুন",
   "archive": "আর্কাইভ",
@@ -178,5 +184,17 @@
   "sendFeedback": "মতামত পাঠান",
   "sendFeedbackHint": "কী ভালো লাগছে আর কী লাগছে না, জানান।",
   "needsConnectionRetry": "এর জন্য ইন্টারনেট সংযোগ লাগবে। অনলাইনে এসে আবার চেষ্টা করুন।",
-  "retry": "আবার চেষ্টা করুন"
+  "retry": "আবার চেষ্টা করুন",
+
+  "search": "খুঁজুন",
+  "searchTransactions": "নোট, খাত বা পরিমাণ দিয়ে খুঁজুন",
+  "searchOrCreate": "খুঁজুন বা নতুন নাম লিখুন",
+  "filterAll": "সব",
+  "noResultsFor": "\"{query}\" এর সাথে কিছু মেলেনি।",
+  "noMatches": "কিছু মেলেনি।",
+  "createNamed": "\"{name}\" তৈরি করুন",
+  "today": "আজ",
+  "yesterday": "গতকাল",
+  "paceLeft": "খরচের জন্য বাকি {amount}",
+  "paceOver": "বাজেটের চেয়ে {amount} বেশি"
 }

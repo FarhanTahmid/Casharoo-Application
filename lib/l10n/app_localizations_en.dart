@@ -268,6 +268,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currency => 'Currency';
 
   @override
+  String get defaultCurrency => 'Default currency';
+
+  @override
+  String get defaultCurrencyHint =>
+      'New accounts, cashbooks and budgets start in it, and totals are shown in it. What you already have keeps its own.';
+
+  @override
+  String get currencyFixedHint =>
+      'The currency cannot be changed after this is created.';
+
+  @override
+  String get keypadClear => 'Clear';
+
+  @override
+  String get keypadBackspace => 'Delete last';
+
+  @override
+  String get keypadDone => 'Done';
+
+  @override
   String get openingBalance => 'Opening balance';
 
   @override
@@ -571,4 +591,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get searchTransactions => 'Search by note, category or amount';
+
+  @override
+  String get searchOrCreate => 'Search or type a new name';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String noResultsFor(String query) {
+    return 'Nothing matches \"$query\".';
+  }
+
+  @override
+  String get noMatches => 'Nothing matches.';
+
+  @override
+  String createNamed(String name) {
+    return 'Create \"$name\"';
+  }
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String paceLeft(String amount) {
+    return '$amount left to spend';
+  }
+
+  @override
+  String paceOver(String amount) {
+    return '$amount over budget';
+  }
 }
