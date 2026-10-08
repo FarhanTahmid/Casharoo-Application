@@ -31,6 +31,9 @@ class FakeServer {
   String? primaryMode;
   var demoCreated = false;
 
+  /// Default currency of the personal workspace; a PATCH changes it.
+  var personalCurrency = 'BDT';
+
   Map<String, dynamic> row(String id, Map<String, dynamic> fields, {String workspace = personalId}) => {
         'id': id,
         'workspace_id': workspace,
@@ -69,11 +72,18 @@ class FakeServer {
       demoCreated = true;
       return json(shop, 201);
     }
+    final personal = {
+      'id': personalId, 'name': 'Personal', 'kind': 'personal', 'default_currency': personalCurrency, 'is_demo': false, 'role': 'owner',
+    };
+    if (path == '/api/v1/workspaces/$personalId/' && request.method == 'PATCH') {
+      personalCurrency = (jsonDecode(request.body) as Map)['default_currency'] as String;
+      return json({...personal, 'default_currency': personalCurrency});
+    }
     if (path == '/api/v1/workspaces/') {
       return json({
         'next': null,
         'results': [
-          {'id': personalId, 'name': 'Personal', 'kind': 'personal', 'default_currency': 'BDT', 'is_demo': false, 'role': 'owner'},
+          personal,
           if (demoCreated) shop,
         ],
       });
@@ -247,6 +257,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, '500');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await app.settle();
+    await app.settle(); // the balance counts up to its new value
     expect(find.text('৳15,500.00'), findsWidgets); // balance and total in
 
     await app.run(app.container.read(syncControllerProvider.notifier).syncNow());
@@ -281,6 +292,7 @@ void main() {
     expect(find.text('How will you use Spendroo?'), findsOneWidget);
     await tester.tap(find.text('For myself'));
     await settle();
+    await settle(); // the balance counts up to its value once the first sync lands
 
     // --- personal overview, filled by the first sync
     expect(find.text('Total balance'), findsOneWidget);
@@ -288,7 +300,7 @@ void main() {
     expect(find.text('৳500.00'), findsNWidgets(2));
 
     // --- record an expense; it shows at once, before any network round trip
-    await tester.tap(find.text('Add transaction'));
+    await tester.tap(find.byTooltip('Add transaction'));
     await settle();
     await tester.enterText(find.byType(TextFormField).first, '120.50');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));

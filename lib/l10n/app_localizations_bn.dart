@@ -269,6 +269,25 @@ class AppLocalizationsBn extends AppLocalizations {
   String get currency => 'মুদ্রা';
 
   @override
+  String get defaultCurrency => 'ডিফল্ট মুদ্রা';
+
+  @override
+  String get defaultCurrencyHint =>
+      'নতুন অ্যাকাউন্ট, ক্যাশবুক ও বাজেট এই মুদ্রায় শুরু হবে, মোট হিসাবও এতে দেখাবে। আগের গুলো নিজের মুদ্রায় থাকবে।';
+
+  @override
+  String get currencyFixedHint => 'তৈরি করার পর মুদ্রা আর বদলানো যাবে না।';
+
+  @override
+  String get keypadClear => 'মুছুন';
+
+  @override
+  String get keypadBackspace => 'শেষেরটি মুছুন';
+
+  @override
+  String get keypadDone => 'হয়ে গেছে';
+
+  @override
   String get openingBalance => 'প্রারম্ভিক ব্যালেন্স';
 
   @override
@@ -568,4 +587,45 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get retry => 'আবার চেষ্টা করুন';
+
+  @override
+  String get search => 'খুঁজুন';
+
+  @override
+  String get searchTransactions => 'নোট, খাত বা পরিমাণ দিয়ে খুঁজুন';
+
+  @override
+  String get searchOrCreate => 'খুঁজুন বা নতুন নাম লিখুন';
+
+  @override
+  String get filterAll => 'সব';
+
+  @override
+  String noResultsFor(String query) {
+    return '\"$query\" এর সাথে কিছু মেলেনি।';
+  }
+
+  @override
+  String get noMatches => 'কিছু মেলেনি।';
+
+  @override
+  String createNamed(String name) {
+    return '\"$name\" তৈরি করুন';
+  }
+
+  @override
+  String get today => 'আজ';
+
+  @override
+  String get yesterday => 'গতকাল';
+
+  @override
+  String paceLeft(String amount) {
+    return 'খরচের জন্য বাকি $amount';
+  }
+
+  @override
+  String paceOver(String amount) {
+    return 'বাজেটের চেয়ে $amount বেশি';
+  }
 }

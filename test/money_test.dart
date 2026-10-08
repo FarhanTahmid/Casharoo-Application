@@ -45,6 +45,55 @@ void main() {
     });
   });
 
+  group('Money.evaluate', () {
+    test('works sums out with × and ÷ before + and −', () {
+      expect(Money.evaluate('1200+350×2', 'BDT'), 190000);
+      expect(Money.evaluate('1200 + 350 * 2', 'BDT'), 190000);
+      expect(Money.evaluate('(1200+350)×2', 'BDT'), 310000);
+      expect(Money.evaluate('100−30.5', 'BDT'), 6950);
+      expect(Money.evaluate('১০০+৫০', 'BDT'), 15000);
+      expect(Money.evaluate('0.1+0.2', 'BDT'), 30); // exact, where doubles give 0.30000000000000004
+    });
+
+    test('rounds half up to what the currency holds', () {
+      expect(Money.evaluate('100÷3', 'BDT'), 3333);
+      expect(Money.evaluate('200÷3', 'BDT'), 6667);
+      expect(Money.evaluate('0.01÷2', 'BDT'), 1);
+      expect(Money.evaluate('100÷3', 'JPY'), 33);
+      expect(Money.evaluate('100÷3', 'KWD'), 33333);
+    });
+
+    test('takes a percent of the amount before it', () {
+      expect(Money.evaluate('850−10%', 'BDT'), 76500);
+      expect(Money.evaluate('1000+15%', 'BDT'), 115000);
+      expect(Money.evaluate('200×15%', 'BDT'), 3000);
+      expect(Money.evaluate('50%', 'BDT'), 50);
+    });
+
+    test('ignores an operator left at the end', () {
+      expect(Money.evaluate('1200+', 'BDT'), 120000);
+      expect(Money.evaluate('1200+350×', 'BDT'), 155000);
+      expect(Money.evaluate('(1200+350', 'BDT'), 155000);
+    });
+
+    test('a plain amount is parsed as before', () {
+      expect(Money.evaluate('1,250.5', 'BDT'), 125050);
+      expect(Money.evaluate('1.234', 'BDT'), isNull);
+      expect(Money.evaluate('', 'BDT'), isNull);
+      expect(Money.isExpression('1250.50'), isFalse);
+      expect(Money.isExpression('1250+'), isTrue);
+    });
+
+    test('rejects what is not a non-negative amount', () {
+      expect(Money.evaluate('5÷0', 'BDT'), isNull);
+      expect(Money.evaluate('5−10', 'BDT'), isNull);
+      expect(Money.evaluate('-5', 'BDT'), isNull);
+      expect(Money.evaluate('5++2', 'BDT'), isNull);
+      expect(Money.evaluate('2(3)', 'BDT'), isNull);
+      expect(Money.evaluate('999999999999999×10', 'BDT'), isNull);
+    });
+  });
+
   test('toInput round-trips through parse', () {
     for (final (amount, currency) in [(125050, 'BDT'), (7, 'USD'), (500, 'JPY'), (1234, 'KWD')]) {
       expect(Money.parse(Money.toInput(amount, currency), currency), amount);
