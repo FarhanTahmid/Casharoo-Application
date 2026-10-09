@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -66,27 +67,47 @@ class ApiClient {
   Future<ApiResponse> patch(String path, [Object? body]) => _send('PATCH', path, body: body);
   Future<ApiResponse> delete(String path) => _send('DELETE', path);
 
+  /// Sends one file as multipart form data, the way Django expects an upload.
+  Future<ApiResponse> upload(String path, {required String field, required List<int> bytes, required String filename}) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+      ..files.add(http.MultipartFile.fromBytes(field, bytes, filename: filename));
+    return _decode(await _fetch(request));
+  }
+
+  /// The raw body, such as a picture. Null when the server has nothing there.
+  Future<Uint8List?> getBytes(String path) async {
+    final response = await _fetch(http.Request('GET', Uri.parse('$baseUrl$path')));
+    return response.statusCode == 200 ? response.bodyBytes : null;
+  }
+
   Future<ApiResponse> _send(String method, String path, {Object? body, Map<String, String>? query}) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     final request = http.Request(method, uri);
-    request.headers['Accept'] = 'application/json';
-    final token = await tokenStore.read();
-    if (token != null) request.headers['X-Session-Token'] = token;
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
     }
-    try {
-      final response = await http.Response.fromStream(await _http.send(request).timeout(_timeout));
-      dynamic decoded;
-      if (response.body.isNotEmpty) {
-        try {
-          decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        } on FormatException {
-          decoded = null; // an HTML error page from a proxy, for example
-        }
+    return _decode(await _fetch(request));
+  }
+
+  ApiResponse _decode(http.Response response) {
+    dynamic decoded;
+    if (response.body.isNotEmpty) {
+      try {
+        decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      } on FormatException {
+        decoded = null; // an HTML error page from a proxy, for example
       }
-      return ApiResponse(response.statusCode, decoded);
+    }
+    return ApiResponse(response.statusCode, decoded);
+  }
+
+  Future<http.Response> _fetch(http.BaseRequest request) async {
+    request.headers['Accept'] = 'application/json';
+    final token = await tokenStore.read();
+    if (token != null) request.headers['X-Session-Token'] = token;
+    try {
+      return await http.Response.fromStream(await _http.send(request).timeout(_timeout));
     } on SocketException {
       throw const OfflineException();
     } on TimeoutException {

@@ -150,6 +150,9 @@ const onboardingUnsentKey = 'onboarding_unsent';
 /// Server address chosen in Settings (test builds only); unset means AppConfig.apiUrl.
 const serverUrlSettingKey = 'server_url';
 
+/// The signed-in user's profile as JSON, so it shows offline.
+const profileSettingKey = 'profile';
+
 /// Small per-device settings: language, theme, selected workspace.
 class Settings extends Table {
   TextColumn get key => text()();

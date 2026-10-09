@@ -36,8 +36,17 @@ class AuthRepository {
   Future<AuthResult> signUp(String email, String password) =>
       _flow(() => _api.post('$_base/auth/signup', {'email': email, 'password': password}));
 
-  Future<AuthResult> logIn(String email, String password) =>
-      _flow(() => _api.post('$_base/auth/login', {'email': email, 'password': password}));
+  /// [identifier] is an email or a username. Usernames never contain an @, so that tells them apart.
+  Future<AuthResult> logIn(String identifier, String password) => _flow(() => _api.post('$_base/auth/login', {
+        isEmail(identifier) ? 'email' : 'username': identifier,
+        'password': password,
+      }));
+
+  static bool isEmail(String identifier) => identifier.contains('@');
+
+  /// Without [current] it sets a first password, for an account made with Google.
+  Future<AuthResult> changePassword({String? current, required String next}) =>
+      _flow(() => _api.post('$_base/account/password/change', {'current_password': ?current, 'new_password': next}));
 
   Future<AuthResult> verifyEmail(String code) =>
       _flow(() => _api.post('$_base/auth/email/verify', {'key': code.trim()}));

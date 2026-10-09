@@ -1207,6 +1207,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{amount} over budget'**
   String paceOver(String amount);
+
+  /// No description provided for @emailOrUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or username'**
+  String get emailOrUsername;
+
+  /// No description provided for @enterEmailOrUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email or username'**
+  String get enterEmailOrUsername;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmNewPassword;
+
+  /// No description provided for @passwordsDontMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match'**
+  String get passwordsDontMatch;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @enterCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get enterCurrentPassword;
+
+  /// No description provided for @passwordSameAsCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password different from your current one'**
+  String get passwordSameAsCurrent;
+
+  /// No description provided for @passwordUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated.'**
+  String get passwordUpdated;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
+
+  /// No description provided for @setPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a password'**
+  String get setPassword;
+
+  /// No description provided for @setPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You signed in with Google. Set a password to also log in with your email or username.'**
+  String get setPasswordHint;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @profileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo, username and password'**
+  String get profileHint;
+
+  /// No description provided for @profileDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get profileDetails;
+
+  /// No description provided for @signInAndSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in and security'**
+  String get signInAndSecurity;
+
+  /// No description provided for @firstName.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get firstName;
+
+  /// No description provided for @lastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get lastName;
+
+  /// No description provided for @bio.
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get bio;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @profileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved.'**
+  String get profileSaved;
+
+  /// No description provided for @username.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get username;
+
+  /// No description provided for @usernameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can log in with it instead of your email.'**
+  String get usernameHint;
+
+  /// No description provided for @usernameChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get usernameChecking;
+
+  /// No description provided for @usernameAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get usernameAvailable;
+
+  /// No description provided for @usernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Already taken'**
+  String get usernameTaken;
+
+  /// No description provided for @usernameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters, numbers and . _ + - only'**
+  String get usernameInvalid;
+
+  /// No description provided for @usernameYours.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your username'**
+  String get usernameYours;
+
+  /// No description provided for @usernameSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Free ones like it:'**
+  String get usernameSuggestions;
+
+  /// No description provided for @changeUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Change username'**
+  String get changeUsername;
+
+  /// No description provided for @usernameChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Username changed.'**
+  String get usernameChanged;
+
+  /// No description provided for @confirmWithPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password to confirm this change.'**
+  String get confirmWithPassword;
+
+  /// No description provided for @confirmChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmChange;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changePhoto;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get takePhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get removePhoto;
+
+  /// No description provided for @cropPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop photo'**
+  String get cropPhoto;
+
+  /// No description provided for @photoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo updated.'**
+  String get photoUpdated;
+
+  /// No description provided for @photoRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo removed.'**
+  String get photoRemoved;
 }
 
 class _AppLocalizationsDelegate

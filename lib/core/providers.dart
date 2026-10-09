@@ -104,7 +104,15 @@ class AuthController extends Notifier<AuthState> {
   Future<String?> signUp(String email, String password) =>
       _run(() => _auth.signUp(email, password), email: email);
 
-  Future<String?> logIn(String email, String password) => _run(() => _auth.logIn(email, password), email: email);
+  /// With an email or a username. Only an email is kept for display.
+  Future<String?> logIn(String identifier, String password) => _run(
+        () => _auth.logIn(identifier, password),
+        email: AuthRepository.isEmail(identifier) ? identifier : null,
+      );
+
+  /// Without [current] it sets a first password, for an account made with Google.
+  Future<String?> changePassword({String? current, required String next}) =>
+      _run(() => _auth.changePassword(current: current, next: next), email: state.email);
 
   Future<String?> logInWithGoogle({required String idToken, required String clientId}) =>
       _run(() => _auth.logInWithGoogle(idToken: idToken, clientId: clientId));
@@ -161,6 +169,7 @@ class AuthController extends Notifier<AuthState> {
     await _db.setSetting(CurrentWorkspaceController.settingKey, null);
     await _db.setSetting(onboardedSettingKey, null);
     await _db.setSetting(onboardingUnsentKey, null);
+    await _db.setSetting(profileSettingKey, null);
   }
 }
 

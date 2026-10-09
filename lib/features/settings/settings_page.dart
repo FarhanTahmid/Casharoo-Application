@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/config.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../profile/profile_page.dart';
+import '../profile/profile_repository.dart';
 import '../shell/home_shell.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -21,6 +23,7 @@ class SettingsPage extends ConsumerWidget {
     final failures = ref.watch(syncFailuresProvider).value ?? const [];
     final workspace = ref.watch(currentWorkspaceProvider);
     final db = ref.read(databaseProvider);
+    final profile = ref.watch(profileProvider).value;
 
     final syncText = status.syncing
         ? l10n.syncing
@@ -68,6 +71,16 @@ class SettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpace.page, AppSpace.sm, AppSpace.page, AppSpace.xl),
         children: [
+          group([
+            ListTile(
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+              leading: const UserAvatar(size: 44),
+              title: Text(profile?.displayName ?? l10n.profile),
+              subtitle: Text(profile == null ? l10n.profileHint : '@${profile.username}'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/profile'),
+            ),
+          ]),
           group([
             choiceRow(
               Icons.language_rounded,

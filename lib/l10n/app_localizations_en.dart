@@ -632,4 +632,127 @@ class AppLocalizationsEn extends AppLocalizations {
   String paceOver(String amount) {
     return '$amount over budget';
   }
+
+  @override
+  String get emailOrUsername => 'Email or username';
+
+  @override
+  String get enterEmailOrUsername => 'Enter your email or username';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get confirmNewPassword => 'Confirm new password';
+
+  @override
+  String get passwordsDontMatch => 'Passwords don\'t match';
+
+  @override
+  String get currentPassword => 'Current password';
+
+  @override
+  String get enterCurrentPassword => 'Enter your current password';
+
+  @override
+  String get passwordSameAsCurrent =>
+      'Choose a password different from your current one';
+
+  @override
+  String get passwordUpdated => 'Password updated.';
+
+  @override
+  String get changePassword => 'Change password';
+
+  @override
+  String get setPassword => 'Set a password';
+
+  @override
+  String get setPasswordHint =>
+      'You signed in with Google. Set a password to also log in with your email or username.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get profileHint => 'Photo, username and password';
+
+  @override
+  String get profileDetails => 'Details';
+
+  @override
+  String get signInAndSecurity => 'Sign-in and security';
+
+  @override
+  String get firstName => 'First name';
+
+  @override
+  String get lastName => 'Last name';
+
+  @override
+  String get bio => 'About you';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get profileSaved => 'Profile saved.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get usernameHint => 'You can log in with it instead of your email.';
+
+  @override
+  String get usernameChecking => 'Checking…';
+
+  @override
+  String get usernameAvailable => 'Available';
+
+  @override
+  String get usernameTaken => 'Already taken';
+
+  @override
+  String get usernameInvalid => 'Use letters, numbers and . _ + - only';
+
+  @override
+  String get usernameYours => 'This is your username';
+
+  @override
+  String get usernameSuggestions => 'Free ones like it:';
+
+  @override
+  String get changeUsername => 'Change username';
+
+  @override
+  String get usernameChanged => 'Username changed.';
+
+  @override
+  String get confirmWithPassword =>
+      'Enter your password to confirm this change.';
+
+  @override
+  String get confirmChange => 'Confirm';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get takePhoto => 'Take a photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from gallery';
+
+  @override
+  String get removePhoto => 'Remove photo';
+
+  @override
+  String get cropPhoto => 'Crop photo';
+
+  @override
+  String get photoUpdated => 'Profile photo updated.';
+
+  @override
+  String get photoRemoved => 'Profile photo removed.';
 }

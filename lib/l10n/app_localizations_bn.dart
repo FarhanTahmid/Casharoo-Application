@@ -628,4 +628,127 @@ class AppLocalizationsBn extends AppLocalizations {
   String paceOver(String amount) {
     return 'বাজেটের চেয়ে $amount বেশি';
   }
+
+  @override
+  String get emailOrUsername => 'ইমেইল বা ইউজারনেম';
+
+  @override
+  String get enterEmailOrUsername => 'আপনার ইমেইল বা ইউজারনেম দিন';
+
+  @override
+  String get confirmPassword => 'পাসওয়ার্ড নিশ্চিত করুন';
+
+  @override
+  String get confirmNewPassword => 'নতুন পাসওয়ার্ড নিশ্চিত করুন';
+
+  @override
+  String get passwordsDontMatch => 'পাসওয়ার্ড দুটি মেলেনি';
+
+  @override
+  String get currentPassword => 'বর্তমান পাসওয়ার্ড';
+
+  @override
+  String get enterCurrentPassword => 'আপনার বর্তমান পাসওয়ার্ড দিন';
+
+  @override
+  String get passwordSameAsCurrent =>
+      'বর্তমান পাসওয়ার্ড থেকে আলাদা একটি পাসওয়ার্ড বেছে নিন';
+
+  @override
+  String get passwordUpdated => 'পাসওয়ার্ড হালনাগাদ হয়েছে।';
+
+  @override
+  String get changePassword => 'পাসওয়ার্ড বদলান';
+
+  @override
+  String get setPassword => 'পাসওয়ার্ড সেট করুন';
+
+  @override
+  String get setPasswordHint =>
+      'আপনি Google দিয়ে সাইন ইন করেছেন। ইমেইল বা ইউজারনেম দিয়েও লগ ইন করতে একটি পাসওয়ার্ড সেট করুন।';
+
+  @override
+  String get profile => 'প্রোফাইল';
+
+  @override
+  String get profileHint => 'ছবি, ইউজারনেম ও পাসওয়ার্ড';
+
+  @override
+  String get profileDetails => 'বিবরণ';
+
+  @override
+  String get signInAndSecurity => 'সাইন-ইন ও নিরাপত্তা';
+
+  @override
+  String get firstName => 'নামের প্রথম অংশ';
+
+  @override
+  String get lastName => 'নামের শেষ অংশ';
+
+  @override
+  String get bio => 'আপনার সম্পর্কে';
+
+  @override
+  String get phone => 'ফোন';
+
+  @override
+  String get profileSaved => 'প্রোফাইল সংরক্ষণ হয়েছে।';
+
+  @override
+  String get username => 'ইউজারনেম';
+
+  @override
+  String get usernameHint => 'ইমেইলের বদলে এটি দিয়েও লগ ইন করতে পারবেন।';
+
+  @override
+  String get usernameChecking => 'যাচাই করা হচ্ছে…';
+
+  @override
+  String get usernameAvailable => 'পাওয়া যাচ্ছে';
+
+  @override
+  String get usernameTaken => 'আগেই কেউ নিয়েছে';
+
+  @override
+  String get usernameInvalid => 'শুধু অক্ষর, সংখ্যা এবং . _ + - ব্যবহার করুন';
+
+  @override
+  String get usernameYours => 'এটি আপনার ইউজারনেম';
+
+  @override
+  String get usernameSuggestions => 'এর মতো খালি ইউজারনেম:';
+
+  @override
+  String get changeUsername => 'ইউজারনেম বদলান';
+
+  @override
+  String get usernameChanged => 'ইউজারনেম বদলানো হয়েছে।';
+
+  @override
+  String get confirmWithPassword =>
+      'এই পরিবর্তন নিশ্চিত করতে আপনার পাসওয়ার্ড দিন।';
+
+  @override
+  String get confirmChange => 'নিশ্চিত করুন';
+
+  @override
+  String get changePhoto => 'ছবি বদলান';
+
+  @override
+  String get takePhoto => 'ছবি তুলুন';
+
+  @override
+  String get chooseFromGallery => 'গ্যালারি থেকে বেছে নিন';
+
+  @override
+  String get removePhoto => 'ছবি সরান';
+
+  @override
+  String get cropPhoto => 'ছবি ক্রপ করুন';
+
+  @override
+  String get photoUpdated => 'প্রোফাইল ছবি হালনাগাদ হয়েছে।';
+
+  @override
+  String get photoRemoved => 'প্রোফাইল ছবি সরানো হয়েছে।';
 }
