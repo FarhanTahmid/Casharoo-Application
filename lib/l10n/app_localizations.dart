@@ -1447,6 +1447,420 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile photo removed.'**
   String get photoRemoved;
+
+  /// No description provided for @plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get plan;
+
+  /// No description provided for @planYours.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan'**
+  String get planYours;
+
+  /// No description provided for @planUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String planUntil(String date);
+
+  /// No description provided for @planGraceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment is late. The plan stays on for a few more days.'**
+  String get planGraceNote;
+
+  /// No description provided for @planSeePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'See plans'**
+  String get planSeePlans;
+
+  /// No description provided for @planUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'What you are using'**
+  String get planUsage;
+
+  /// No description provided for @planCountOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {limit}'**
+  String planCountOf(int count, int limit);
+
+  /// No description provided for @planUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get planUnlimited;
+
+  /// No description provided for @planResetsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts again on {date}'**
+  String planResetsOn(String date);
+
+  /// No description provided for @planRedeem.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem a code'**
+  String get planRedeem;
+
+  /// No description provided for @planRedeemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Have a promo code? Enter it here.'**
+  String get planRedeemHint;
+
+  /// No description provided for @planCodeApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code applied. You are on the {plan} plan.'**
+  String planCodeApplied(String plan);
+
+  /// No description provided for @planThrottled.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Wait a while and try again.'**
+  String get planThrottled;
+
+  /// No description provided for @planUpgradeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get more from Spendroo'**
+  String get planUpgradeTitle;
+
+  /// No description provided for @planBuySoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Buying a plan in the app is coming soon. If you have a code, use it below.'**
+  String get planBuySoon;
+
+  /// No description provided for @planSimulate.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate purchase (test build)'**
+  String get planSimulate;
+
+  /// No description provided for @planSimulateExpire.
+  ///
+  /// In en, this message translates to:
+  /// **'End my plan now (test build)'**
+  String get planSimulateExpire;
+
+  /// No description provided for @planLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the plans. Check your connection.'**
+  String get planLoadFailed;
+
+  /// No description provided for @planOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers'**
+  String get planOffers;
+
+  /// No description provided for @planUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get planUpgrade;
+
+  /// No description provided for @planEverythingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in {plan}, and:'**
+  String planEverythingIn(String plan);
+
+  /// No description provided for @limitAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {plan} plan allows {limit, plural, =1{1 account} other{{limit} accounts}}.'**
+  String limitAccounts(String plan, int limit);
+
+  /// No description provided for @limitCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {plan} plan allows {limit, plural, =1{1 category} other{{limit} categories}} of your own.'**
+  String limitCategories(String plan, int limit);
+
+  /// No description provided for @limitCashbooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {plan} plan allows {limit, plural, =1{1 cashbook} other{{limit} cashbooks}} in a business.'**
+  String limitCashbooks(String plan, int limit);
+
+  /// No description provided for @limitWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {plan} plan allows {limit, plural, =0{no business} =1{1 business} other{{limit} businesses}}.'**
+  String limitWorkspaces(String plan, int limit);
+
+  /// No description provided for @limitGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {plan} plan does not allow more of this.'**
+  String limitGeneric(String plan);
+
+  /// No description provided for @limitFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'{feature} is not part of your {plan} plan.'**
+  String limitFeature(String feature, String plan);
+
+  /// No description provided for @limitLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This is read-only on your {plan} plan. Upgrade, or choose what to keep.'**
+  String limitLocked(String plan);
+
+  /// No description provided for @limitQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'This month\'s allowance is used up: {feature}.'**
+  String limitQuota(String feature);
+
+  /// No description provided for @featureAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get featureAccounts;
+
+  /// No description provided for @featureCustomCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories of your own'**
+  String get featureCustomCategories;
+
+  /// No description provided for @featureBudgetMonthOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'A different budget for one month'**
+  String get featureBudgetMonthOverride;
+
+  /// No description provided for @featureInsightsCustomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights for any dates'**
+  String get featureInsightsCustomRange;
+
+  /// No description provided for @featureYearReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Year in review'**
+  String get featureYearReview;
+
+  /// No description provided for @featureTrendMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Months of trends'**
+  String get featureTrendMonths;
+
+  /// No description provided for @featureRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring transactions and reminders'**
+  String get featureRecurring;
+
+  /// No description provided for @featureSavingsGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings goals'**
+  String get featureSavingsGoals;
+
+  /// No description provided for @featureHomeWidget.
+  ///
+  /// In en, this message translates to:
+  /// **'Home screen widget'**
+  String get featureHomeWidget;
+
+  /// No description provided for @featureBusinesses.
+  ///
+  /// In en, this message translates to:
+  /// **'Businesses'**
+  String get featureBusinesses;
+
+  /// No description provided for @featureCashbooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashbooks in a business'**
+  String get featureCashbooks;
+
+  /// No description provided for @featureTeamSeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Team members'**
+  String get featureTeamSeats;
+
+  /// No description provided for @featureReportRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports for any dates'**
+  String get featureReportRange;
+
+  /// No description provided for @featureReportExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports as PDF and Excel'**
+  String get featureReportExport;
+
+  /// No description provided for @featureAuditTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'History of every change'**
+  String get featureAuditTrail;
+
+  /// No description provided for @featureCustomFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra fields on entries'**
+  String get featureCustomFields;
+
+  /// No description provided for @featureStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage for bills, in MB'**
+  String get featureStorage;
+
+  /// No description provided for @featureAiCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'AI credits a month'**
+  String get featureAiCredits;
+
+  /// No description provided for @featurePdfPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement pages read a month'**
+  String get featurePdfPages;
+
+  /// No description provided for @featureDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get featureDevices;
+
+  /// No description provided for @featureNoAds.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads'**
+  String get featureNoAds;
+
+  /// No description provided for @keepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to keep'**
+  String get keepTitle;
+
+  /// No description provided for @keepIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan now allows fewer than you have. Choose the ones to go on editing. The rest stay safe and readable; nothing is deleted.'**
+  String get keepIntro;
+
+  /// No description provided for @keepChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'{chosen} of {limit} chosen'**
+  String keepChosen(int chosen, int limit);
+
+  /// No description provided for @keepSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep these'**
+  String get keepSave;
+
+  /// No description provided for @keepSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. The others are read-only.'**
+  String get keepSaved;
+
+  /// No description provided for @keepChangeFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change this again from {date}.'**
+  String keepChangeFrom(String date);
+
+  /// No description provided for @keepPendingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Until you choose, the oldest ones stay editable.'**
+  String get keepPendingNote;
+
+  /// No description provided for @keepOnceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose with care: after saving, this cannot be changed for a while.'**
+  String get keepOnceNote;
+
+  /// No description provided for @keepNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is locked. Everything you have fits your plan.'**
+  String get keepNothing;
+
+  /// No description provided for @keepIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{feature} in {workspace}'**
+  String keepIn(String feature, String workspace);
+
+  /// No description provided for @keepLockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item is read-only} other{{count} items are read-only}}'**
+  String keepLockedCount(int count);
+
+  /// No description provided for @keepOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to the internet to change this.'**
+  String get keepOffline;
+
+  /// No description provided for @defaultTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultTag;
+
+  /// No description provided for @customCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own: {count} of {limit}'**
+  String customCount(int count, int limit);
+
+  /// No description provided for @offerEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String offerEnds(String date);
+
+  /// No description provided for @offerClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Get it'**
+  String get offerClaim;
+
+  /// No description provided for @offerClaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'It is yours now. Enjoy!'**
+  String get offerClaimed;
+
+  /// No description provided for @offerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'On for you'**
+  String get offerActive;
+
+  /// No description provided for @lockedTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get lockedTag;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -160,6 +161,60 @@ void main() {
           expectedNewSettingsData,
           await newDb.select(newDb.settings).get(),
         );
+      },
+    );
+  });
+
+  // Version 3 adds the server's "default" marker to categories. Rows already
+  // on the phone were pulled without it, so the pull starts over to fetch it.
+  test('migration from v2 to v3 keeps categories and pulls them again', () async {
+    const food = v2.CategoriesData(
+      id: 'c1',
+      workspaceId: 'w1',
+      version: 3,
+      serverSeq: 12,
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-02T00:00:00Z',
+      name: 'Food',
+      kind: 'expense',
+    );
+    const unsent = v2.OutboxData(
+      seq: 1,
+      mutationId: 'm1',
+      workspaceId: 'w1',
+      tableName_: 'categories',
+      op: 'upsert',
+      rowId: 'c1',
+      data: '{"name":"Food"}',
+    );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 2,
+      newVersion: 3,
+      createOld: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insert(oldDb.categories, food);
+        batch.insert(oldDb.outbox, unsent);
+        batch.insert(
+          oldDb.syncCursors,
+          const v2.SyncCursorsData(workspaceId: 'w1', since: 40),
+        );
+        batch.insert(
+          oldDb.settings,
+          const v2.SettingsData(key: 'locale', value: 'bn'),
+        );
+      },
+      validateItems: (newDb) async {
+        final category = await newDb.select(newDb.categories).getSingle();
+        expect((category.id, category.name, category.kind, category.serverSeq), ('c1', 'Food', 'expense', 12));
+        // Unknown until the server says otherwise, which counts it as the user's own
+        expect(category.isDefault, isFalse);
+        expect(await newDb.select(newDb.syncCursors).get(), isEmpty);
+        // What was waiting to be sent, and the settings, are untouched
+        expect((await newDb.select(newDb.outbox).getSingle()).mutationId, 'm1');
+        expect((await newDb.select(newDb.settings).getSingle()).value, 'bn');
       },
     );
   });

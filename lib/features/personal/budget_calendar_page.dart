@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/money.dart';
 import '../../core/ui.dart';
+import '../plan/upgrade_sheet.dart';
 import 'ledger_repository.dart';
 import 'personal_pages.dart';
 
@@ -397,8 +398,9 @@ Future<void> showBudgetForm(BuildContext context, WidgetRef ref, Workspace works
                 options: options,
                 createLabel: l10n.newCategory,
                 onCreate: (name) async {
-                  final id = await repo.addCategory(workspace.id, name, 'expense');
-                  options.add(SelectOption(id, name));
+                  String? id;
+                  await guarded(context, () async => id = await repo.addCategory(workspace.id, name, 'expense'));
+                  if (id != null) options.add(SelectOption(id!, name));
                   return id;
                 },
                 onChanged: (value) => setState(() => categoryId = value),
@@ -418,9 +420,12 @@ Future<void> showBudgetForm(BuildContext context, WidgetRef ref, Workspace works
               child: FilledButton(
                 onPressed: () async {
                   if (!formKey.currentState!.validate() || categoryId == null) return setState(() => refused++);
-                  await repo.setBudget(workspace.id, categoryId!, Money.evaluate(amount.text, currency)!, currency,
-                      month: thisMonthOnly ? monthKey(month) : null);
-                  if (!context.mounted) return;
+                  final saved = await guarded(
+                    context,
+                    () => repo.setBudget(workspace.id, categoryId!, Money.evaluate(amount.text, currency)!, currency,
+                        month: thisMonthOnly ? monthKey(month) : null),
+                  );
+                  if (!saved || !context.mounted) return;
                   showEventBurst(context, AppEvent.saved);
                   Navigator.pop(context);
                 },

@@ -1,5 +1,8 @@
+import 'package:spendroo/core/api/api_client.dart';
 import 'package:spendroo/core/db/database.dart';
 import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/core/entitlements/entitlements.dart';
+import 'package:spendroo/core/entitlements/entitlements_controller.dart';
 import 'package:spendroo/core/providers.dart';
 import 'package:spendroo/core/theme.dart';
 import 'package:spendroo/features/personal/budget_calendar_page.dart';
@@ -24,9 +27,20 @@ const workspace = Workspace(
   role: 'owner',
 );
 
+/// The plan the server would have answered with, without a server.
+class FixedEntitlements extends EntitlementsController {
+  FixedEntitlements(this.plan);
+
+  final Entitlements plan;
+
+  @override
+  Future<Entitlements?> build() async => plan;
+}
+
 /// A personal screen on an in-memory database, with the month fixed to October 2026.
+/// Without [plan] nobody is signed in, so no plan limits anything.
 class ScreenHarness {
-  ScreenHarness(this.tester) {
+  ScreenHarness(this.tester, {Entitlements? plan}) {
     useHostSqlite();
     db = AppDatabase(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true));
     store = LocalStore(db);
@@ -34,6 +48,8 @@ class ScreenHarness {
     container = ProviderContainer(overrides: [
       databaseProvider.overrideWithValue(db),
       localStoreProvider.overrideWithValue(store),
+      tokenStoreProvider.overrideWithValue(MemoryTokenStore()),
+      if (plan != null) entitlementsProvider.overrideWith(() => FixedEntitlements(plan)),
     ]);
     container.read(selectedMonthProvider.notifier).set(DateTime(2026, 10));
   }
@@ -162,6 +178,45 @@ void main() {
     await tester.tap(find.text('Income'));
     await app.settle();
     expect(find.text('Salary'), findsOneWidget);
+    await app.stop();
+  });
+
+  testWidgets('categories on a limited plan: defaults are tagged, own ones counted, the limit explained', (tester) async {
+    final plan = Entitlements({
+      'version': 'v1',
+      'plan': {'code': 'free', 'name': 'Free', 'rank': 0},
+      'source': 'default',
+      'features': {
+        F.customCategories: {'kind': 'limit', 'limit': 2, 'unlimited': false},
+      },
+    }, fetchedAt: DateTime(2026, 10, 10));
+    final app = ScreenHarness(tester, plan: plan);
+    await app.run(() async {
+      await app.db.into(app.db.workspaces).insert(workspace);
+      await app.container.read(currentWorkspaceIdProvider.notifier).select(workspace.id);
+      // One the account started with, as the server marks it, and two of the user's own
+      await app.store.upsertRow('categories', {
+        'id': 'd1', 'workspace_id': workspace.id, 'created_at': '2026-10-01', 'updated_at': '2026-10-01',
+        'name': 'Food', 'kind': 'expense', 'is_default': true,
+      });
+      await app.ledger.addCategory(workspace.id, 'Cricket', 'expense');
+      await app.ledger.addCategory(workspace.id, 'Books', 'expense');
+      await app.db.delete(app.db.workspaces).go();
+    });
+    final queued = (await app.run(() => app.db.select(app.db.outbox).get())).length;
+
+    await app.show(const CategoriesPage());
+    expect(find.text('Default'), findsOneWidget);
+    expect(find.text('Your own: 2 of 2'), findsOneWidget);
+
+    await tester.tap(find.text('New category'));
+    await app.settle();
+    await tester.enterText(find.byType(TextField), 'Travel');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await app.settle();
+    expect(find.text('Your Free plan allows 2 categories of your own.'), findsOneWidget);
+    expect(find.text('Travel'), findsNothing);
+    expect((await app.run(() => app.db.select(app.db.outbox).get())).length, queued);
     await app.stop();
   });
 }

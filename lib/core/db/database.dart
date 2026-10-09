@@ -86,6 +86,10 @@ class Accounts extends Table with SyncColumns {
 class Categories extends Table with SyncColumns {
   TextColumn get name => text()();
   TextColumn get kind => text()();
+
+  /// One of the categories every account starts with. Set by the server only;
+  /// the plan's limit on categories counts the others.
+  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
 }
 
 @TableIndex(name: 'transactions_account_date', columns: {#accountId, #occurredOn})
@@ -153,6 +157,18 @@ const serverUrlSettingKey = 'server_url';
 /// The signed-in user's profile as JSON, so it shows offline.
 const profileSettingKey = 'profile';
 
+/// What the server last said the user's plan gives, as JSON, so it shows offline.
+const entitlementsSettingKey = 'entitlements';
+
+/// The server's marker for "plans or this user's plan changed", from the last sync.
+const billingStampSettingKey = 'billing_stamp';
+
+/// Offers closed on the home screen, as comma-separated slugs.
+const offersDismissedSettingKey = 'offers_dismissed';
+
+/// The locks the "choose what to keep" screen was last opened for, so it opens by itself once.
+const keepPromptedSettingKey = 'keep_prompted';
+
 /// Small per-device settings: language, theme, selected workspace.
 class Settings extends Table {
   TextColumn get key => text()();
@@ -172,13 +188,18 @@ class AppDatabase extends _$AppDatabase {
   // Every change: bump this, run `dart run drift_dev make-migrations`, add the
   // step below. The generated tests in test/drift/ check each step.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: stepByStep(
           from1To2: (m, schema) async {
             await m.addColumn(schema.budgets, schema.budgets.month);
+          },
+          from2To3: (m, schema) async {
+            await m.addColumn(schema.categories, schema.categories.isDefault);
+            // Rows already on the phone were pulled without the marker: pull them again
+            await customStatement('DELETE FROM sync_cursors');
           },
         ),
       );

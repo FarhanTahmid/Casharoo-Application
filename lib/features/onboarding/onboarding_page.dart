@@ -5,8 +5,10 @@ import '../../core/api/api_client.dart';
 import '../../core/auth/auth_repository.dart';
 import '../../core/db/database.dart';
 import '../../core/db/local_store.dart';
+import '../../core/entitlements/entitlements.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../plan/upgrade_sheet.dart';
 import '../shell/home_shell.dart';
 
 /// True once the individual-or-business question has been answered for the
@@ -80,9 +82,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Future<void> _finish(String mode, [Future<String?> Function()? create]) async {
     if (create != null) {
       setState(() => _busy = true);
-      final id = await create();
+      String? id;
+      PlanLimitException? refusal;
+      try {
+        id = await create();
+      } on PlanLimitException catch (error) {
+        refusal = error;
+      }
       if (!mounted) return;
-      setState(() => _busy = false);
+      setState(() {
+        _busy = false;
+        _chosen = null;
+      });
+      if (refusal != null) return showUpgradeSheet(context, refusal: refusal);
       if (id == null) return context.showMessage(context.l10n.needsConnectionRetry);
     }
     await ref.read(onboardedProvider.notifier).complete(mode);

@@ -751,4 +751,256 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get photoRemoved => 'প্রোফাইল ছবি সরানো হয়েছে।';
+
+  @override
+  String get plan => 'প্ল্যান';
+
+  @override
+  String get planYours => 'আপনার প্ল্যান';
+
+  @override
+  String planUntil(String date) {
+    return '$date পর্যন্ত';
+  }
+
+  @override
+  String get planGraceNote =>
+      'পেমেন্ট বাকি আছে। প্ল্যানটি আর কয়েক দিন চালু থাকবে।';
+
+  @override
+  String get planSeePlans => 'প্ল্যানগুলো দেখুন';
+
+  @override
+  String get planUsage => 'আপনি যা ব্যবহার করছেন';
+
+  @override
+  String planCountOf(int count, int limit) {
+    return '$limit-এর মধ্যে $count';
+  }
+
+  @override
+  String get planUnlimited => 'সীমাহীন';
+
+  @override
+  String planResetsOn(String date) {
+    return '$date তারিখে নতুন করে শুরু';
+  }
+
+  @override
+  String get planRedeem => 'কোড ব্যবহার করুন';
+
+  @override
+  String get planRedeemHint => 'প্রোমো কোড আছে? এখানে লিখুন।';
+
+  @override
+  String planCodeApplied(String plan) {
+    return 'কোড যোগ হয়েছে। আপনি $plan প্ল্যানে আছেন।';
+  }
+
+  @override
+  String get planThrottled =>
+      'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+
+  @override
+  String get planUpgradeTitle => 'Spendroo থেকে আরও বেশি নিন';
+
+  @override
+  String get planBuySoon =>
+      'অ্যাপ থেকে প্ল্যান কেনার সুবিধা শিগগিরই আসছে। কোড থাকলে নিচে ব্যবহার করুন।';
+
+  @override
+  String get planSimulate => 'কেনার পরীক্ষা (টেস্ট বিল্ড)';
+
+  @override
+  String get planSimulateExpire => 'আমার প্ল্যান এখনই শেষ করুন (টেস্ট বিল্ড)';
+
+  @override
+  String get planLoadFailed =>
+      'প্ল্যানগুলো আনা যায়নি। ইন্টারনেট সংযোগ দেখে নিন।';
+
+  @override
+  String get planOffers => 'অফার';
+
+  @override
+  String get planUpgrade => 'আপগ্রেড';
+
+  @override
+  String planEverythingIn(String plan) {
+    return '$plan প্ল্যানের সবকিছু, সঙ্গে:';
+  }
+
+  @override
+  String limitAccounts(String plan, int limit) {
+    return 'আপনার $plan প্ল্যানে $limitটি অ্যাকাউন্ট রাখা যায়।';
+  }
+
+  @override
+  String limitCategories(String plan, int limit) {
+    return 'আপনার $plan প্ল্যানে নিজের $limitটি খাত রাখা যায়।';
+  }
+
+  @override
+  String limitCashbooks(String plan, int limit) {
+    return 'আপনার $plan প্ল্যানে একটি ব্যবসায় $limitটি ক্যাশবুক রাখা যায়।';
+  }
+
+  @override
+  String limitWorkspaces(String plan, int limit) {
+    return 'আপনার $plan প্ল্যানে $limitটি ব্যবসা রাখা যায়।';
+  }
+
+  @override
+  String limitGeneric(String plan) {
+    return 'আপনার $plan প্ল্যানে এটি আর বাড়ানো যায় না।';
+  }
+
+  @override
+  String limitFeature(String feature, String plan) {
+    return '$feature আপনার $plan প্ল্যানে নেই।';
+  }
+
+  @override
+  String limitLocked(String plan) {
+    return 'আপনার $plan প্ল্যানে এটি শুধু দেখা যায়। আপগ্রেড করুন, অথবা কোনগুলো রাখবেন তা বেছে নিন।';
+  }
+
+  @override
+  String limitQuota(String feature) {
+    return 'এ মাসের বরাদ্দ শেষ: $feature।';
+  }
+
+  @override
+  String get featureAccounts => 'অ্যাকাউন্ট';
+
+  @override
+  String get featureCustomCategories => 'নিজের খাত';
+
+  @override
+  String get featureBudgetMonthOverride => 'এক মাসের জন্য আলাদা বাজেট';
+
+  @override
+  String get featureInsightsCustomRange => 'যেকোনো তারিখের বিশ্লেষণ';
+
+  @override
+  String get featureYearReview => 'বছরের সারসংক্ষেপ';
+
+  @override
+  String get featureTrendMonths => 'যত মাসের ধারা দেখা যায়';
+
+  @override
+  String get featureRecurring => 'নিয়মিত লেনদেন ও রিমাইন্ডার';
+
+  @override
+  String get featureSavingsGoals => 'সঞ্চয়ের লক্ষ্য';
+
+  @override
+  String get featureHomeWidget => 'হোম স্ক্রিন উইজেট';
+
+  @override
+  String get featureBusinesses => 'ব্যবসার সংখ্যা';
+
+  @override
+  String get featureCashbooks => 'প্রতি ব্যবসায় ক্যাশবুক';
+
+  @override
+  String get featureTeamSeats => 'দলের সদস্য';
+
+  @override
+  String get featureReportRange => 'যেকোনো তারিখের রিপোর্ট';
+
+  @override
+  String get featureReportExport => 'PDF ও Excel রিপোর্ট';
+
+  @override
+  String get featureAuditTrail => 'প্রতিটি পরিবর্তনের ইতিহাস';
+
+  @override
+  String get featureCustomFields => 'এন্ট্রিতে বাড়তি ঘর';
+
+  @override
+  String get featureStorage => 'বিল রাখার জায়গা, MB';
+
+  @override
+  String get featureAiCredits => 'মাসে AI ক্রেডিট';
+
+  @override
+  String get featurePdfPages => 'মাসে স্টেটমেন্টের যত পাতা পড়া যায়';
+
+  @override
+  String get featureDevices => 'ডিভাইস';
+
+  @override
+  String get featureNoAds => 'বিজ্ঞাপন নেই';
+
+  @override
+  String get keepTitle => 'কোনগুলো রাখবেন বেছে নিন';
+
+  @override
+  String get keepIntro =>
+      'আপনার প্ল্যানে এখন আপনার যা আছে তার চেয়ে কম রাখা যায়। যেগুলোতে কাজ চালিয়ে যাবেন সেগুলো বেছে নিন। বাকিগুলো নিরাপদ থাকবে ও দেখা যাবে; কিছুই মুছে যাবে না।';
+
+  @override
+  String keepChosen(int chosen, int limit) {
+    return '$limit-এর মধ্যে $chosenটি বাছা হয়েছে';
+  }
+
+  @override
+  String get keepSave => 'এগুলো রাখুন';
+
+  @override
+  String get keepSaved => 'সেভ হয়েছে। বাকিগুলো শুধু দেখা যাবে।';
+
+  @override
+  String keepChangeFrom(String date) {
+    return '$date থেকে আবার বদলাতে পারবেন।';
+  }
+
+  @override
+  String get keepPendingNote =>
+      'আপনি না বাছা পর্যন্ত সবচেয়ে পুরোনোগুলোতে কাজ করা যাবে।';
+
+  @override
+  String get keepOnceNote =>
+      'ভেবে বাছুন: সেভ করার পর কিছুদিন এটি বদলানো যাবে না।';
+
+  @override
+  String get keepNothing => 'কিছুই লক নেই। আপনার সবকিছু প্ল্যানের মধ্যেই আছে।';
+
+  @override
+  String keepIn(String feature, String workspace) {
+    return '$workspace: $feature';
+  }
+
+  @override
+  String keepLockedCount(int count) {
+    return '$countটি শুধু দেখা যাচ্ছে';
+  }
+
+  @override
+  String get keepOffline => 'এটি বদলাতে ইন্টারনেটে যুক্ত হোন।';
+
+  @override
+  String get defaultTag => 'ডিফল্ট';
+
+  @override
+  String customCount(int count, int limit) {
+    return 'নিজের: $limit-এর মধ্যে $count';
+  }
+
+  @override
+  String offerEnds(String date) {
+    return '$date তারিখে শেষ';
+  }
+
+  @override
+  String get offerClaim => 'নিয়ে নিন';
+
+  @override
+  String get offerClaimed => 'এখন এটি আপনার। উপভোগ করুন!';
+
+  @override
+  String get offerActive => 'আপনার জন্য চালু';
+
+  @override
+  String get lockedTag => 'লক করা';
 }

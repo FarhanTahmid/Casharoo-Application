@@ -10,6 +10,8 @@ import 'features/auth/auth_pages.dart';
 import 'features/cashbook/cashbook_pages.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/personal/categories_page.dart';
+import 'features/plan/keep_page.dart';
+import 'features/plan/plan_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/shell/home_shell.dart';
@@ -62,6 +64,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
       GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
+      GoRoute(
+        path: '/plan',
+        builder: (_, _) => const PlanPage(),
+        routes: [GoRoute(path: 'keep', builder: (_, _) => const KeepPage())],
+      ),
       GoRoute(
         path: '/cashbook/:id',
         builder: (_, state) => CashbookPage(bookId: state.pathParameters['id']!),

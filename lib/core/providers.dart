@@ -9,6 +9,8 @@ import 'auth/auth_repository.dart';
 import 'config.dart';
 import 'db/database.dart';
 import 'db/local_store.dart';
+import 'entitlements/entitlements.dart';
+import 'entitlements/entitlements_controller.dart';
 import 'sync/sync_engine.dart';
 
 // ---------------------------------------------------------------- plumbing
@@ -54,7 +56,17 @@ final localStoreProvider = Provider<LocalStore>(
 );
 
 final syncEngineProvider = Provider<SyncEngine>(
-  (ref) => SyncEngine(ref.watch(databaseProvider), ref.watch(apiClientProvider), ref.watch(localStoreProvider)),
+  (ref) => SyncEngine(
+    ref.watch(databaseProvider),
+    ref.watch(apiClientProvider),
+    ref.watch(localStoreProvider),
+    onBillingStamp: (stamp) => ref.read(entitlementsProvider.notifier).stampSeen(stamp),
+    onPlanLimit: (meta) {
+      ref.read(planLimitNoticeProvider.notifier).raise(PlanLimitException.fromJson(meta));
+      // The phone's idea of the plan was out of date, or it would have stopped this itself
+      ref.read(entitlementsProvider.notifier).refresh();
+    },
+  ),
 );
 
 // -------------------------------------------------------------------- auth
@@ -170,6 +182,10 @@ class AuthController extends Notifier<AuthState> {
     await _db.setSetting(onboardedSettingKey, null);
     await _db.setSetting(onboardingUnsentKey, null);
     await _db.setSetting(profileSettingKey, null);
+    await _db.setSetting(entitlementsSettingKey, null);
+    await _db.setSetting(billingStampSettingKey, null);
+    await _db.setSetting(offersDismissedSettingKey, null);
+    await _db.setSetting(keepPromptedSettingKey, null);
   }
 }
 

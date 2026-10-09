@@ -65,6 +65,7 @@ class ApiClient {
   Future<ApiResponse> get(String path, {Map<String, String>? query}) => _send('GET', path, query: query);
   Future<ApiResponse> post(String path, [Object? body]) => _send('POST', path, body: body);
   Future<ApiResponse> patch(String path, [Object? body]) => _send('PATCH', path, body: body);
+  Future<ApiResponse> put(String path, [Object? body]) => _send('PUT', path, body: body);
   Future<ApiResponse> delete(String path) => _send('DELETE', path);
 
   /// Sends one file as multipart form data, the way Django expects an upload.

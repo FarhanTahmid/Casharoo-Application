@@ -5,11 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
 import '../../core/db/database.dart';
 import '../../core/db/local_store.dart';
+import '../../core/entitlements/entitlements.dart';
+import '../../core/entitlements/entitlements_controller.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../cashbook/cashbook_pages.dart';
 import '../personal/budget_calendar_page.dart';
 import '../personal/personal_pages.dart';
+import '../plan/offer_banner.dart';
+import '../plan/plan_text.dart';
+import '../plan/upgrade_sheet.dart';
 
 /// Creating and deleting workspaces happens on the server, so these need a connection.
 class WorkspaceActions {
@@ -20,14 +25,18 @@ class WorkspaceActions {
   /// Returns the new workspace id, or null when offline or refused. Pass the
   /// same [id] when retrying: the server then returns the business it already made.
   /// It starts in the currency of the workspace the user is in.
-  Future<String?> createBusiness(String name, {String? id}) => _create(() => ref.read(apiClientProvider).post(
-        '/api/v1/workspaces/',
-        {
-          'id': id ?? newId(),
-          'name': name,
-          'default_currency': ?ref.read(currentWorkspaceProvider)?.defaultCurrency,
-        },
-      ));
+  /// Throws a PlanLimitException when the plan allows no more businesses.
+  Future<String?> createBusiness(String name, {String? id}) async {
+    await ref.read(planGuardProvider).roomFor(F.businessWorkspaces, '');
+    return _create(() => ref.read(apiClientProvider).post(
+          '/api/v1/workspaces/',
+          {
+            'id': id ?? newId(),
+            'name': name,
+            'default_currency': ?ref.read(currentWorkspaceProvider)?.defaultCurrency,
+          },
+        ));
+  }
 
   /// The currency new accounts, cashbooks and budgets start in, and totals are
   /// shown in. What already exists keeps its own. False when offline or refused.
@@ -61,6 +70,11 @@ class WorkspaceActions {
   Future<String?> _create(Future<ApiResponse> Function() request) async {
     try {
       final response = await request();
+      // The server's own "not on your plan": the phone's copy of the plan was behind
+      if (response.statusCode == 402 && response.body is Map) {
+        ref.read(entitlementsProvider.notifier).refresh();
+        throw PlanLimitException.fromJson(response.body as Map);
+      }
       if (!response.ok) return null;
       final id = response.json['id'] as String;
       await ref.read(syncControllerProvider.notifier).syncNow();
@@ -85,12 +99,56 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _tab = 0;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Back in the app: a plan may have been bought, ended or changed meanwhile
+    _lifecycle = AppLifecycleListener(onResume: () => ref.read(entitlementsProvider.notifier).refresh());
+    // Also for a plan that was already known when this screen opened
+    ref.listenManual(entitlementsProvider, fireImmediately: true, (_, next) {
+      final plan = next.value;
+      if (plan != null) _promptToKeep(plan);
+    });
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  /// A sync undid a change the plan does not allow: say why, once. The notice
+  /// stays until the sheet is closed, so further refusals from the same sync
+  /// do not stack more sheets on top.
+  Future<void> _showRefusal(PlanLimitException refusal) async {
+    await showUpgradeSheet(context, refusal: refusal);
+    if (mounted) ref.read(planLimitNoticeProvider.notifier).clear();
+  }
+
+  /// A downgrade left the user over a limit: open the choice by itself the
+  /// first time. After that it waits on the Plan screen.
+  Future<void> _promptToKeep(Entitlements plan) async {
+    final pending = [
+      for (final lock in plan.locks)
+        if (lock.pending) '${lock.feature}|${lock.scope}|${lock.limit}',
+    ].join(',');
+    if (pending.isEmpty) return;
+    final db = ref.read(databaseProvider);
+    if (await db.getSetting(keepPromptedSettingKey) == pending) return;
+    await db.setSetting(keepPromptedSettingKey, pending);
+    if (mounted) context.push('/plan/keep');
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.colors;
     final workspace = ref.watch(currentWorkspaceProvider);
+    ref.listen(planLimitNoticeProvider, (_, refusal) {
+      if (refusal != null) _showRefusal(refusal);
+    });
     if (workspace == null) {
       // First launch after login: the first sync has not finished yet
       final status = ref.watch(syncControllerProvider);
@@ -151,16 +209,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           const SizedBox(width: 4),
         ],
       ),
-      // One page leaves as the next arrives: fade through, with a slight rise
-      body: AnimatedSwitcher(
-        duration: context.motion(AppMotion.emphasised),
-        switchInCurve: AppMotion.ease,
-        switchOutCurve: Curves.easeIn,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(scale: Tween(begin: 0.97, end: 1.0).animate(animation), child: child),
-        ),
-        child: KeyedSubtree(key: ValueKey('${workspace.id}-$tab'), child: pages[tab]),
+      body: Column(
+        children: [
+          const OfferBanner(),
+          Expanded(
+            // One page leaves as the next arrives: fade through, with a slight rise
+            child: AnimatedSwitcher(
+              duration: context.motion(AppMotion.emphasised),
+              switchInCurve: AppMotion.ease,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(scale: Tween(begin: 0.97, end: 1.0).animate(animation), child: child),
+              ),
+              child: KeyedSubtree(key: ValueKey('${workspace.id}-$tab'), child: pages[tab]),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: personal
           ? _BottomBar(
@@ -349,15 +414,22 @@ class _WorkspaceSheet extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final workspaces = ref.watch(workspacesProvider).value ?? const <Workspace>[];
     final actions = ref.read(workspaceActionsProvider);
+    final plan = ref.watch(entitlementsProvider).value;
 
     Future<void> create(Future<String?> Function() action) async {
+      // The screen under this sheet, which is still there once the sheet has closed
+      final host = Navigator.of(context).context;
       Navigator.pop(context);
       final messenger = ScaffoldMessenger.of(context);
       final failed = l10n.needsConnection;
-      if (await action() == null) {
-        messenger.showSnackBar(SnackBar(content: Text(failed)));
-      } else {
-        onSwitched();
+      try {
+        if (await action() == null) {
+          messenger.showSnackBar(SnackBar(content: Text(failed)));
+        } else {
+          onSwitched();
+        }
+      } on PlanLimitException catch (refusal) {
+        if (host.mounted) await showUpgradeSheet(host, refusal: refusal);
       }
     }
 
@@ -370,7 +442,16 @@ class _WorkspaceSheet extends ConsumerWidget {
             leading: IconBadge(_workspaceIcon(workspace)),
             title: Text(workspaceLabel(context, workspace)),
             subtitle: Text(workspace.isDemo ? l10n.demo : (workspace.kind == 'personal' ? l10n.personal : l10n.business)),
-            trailing: workspace.id == current.id ? Icon(Icons.check_circle_rounded, color: scheme.primary) : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (plan?.isLocked(workspace.id) ?? false) const LockedTag(),
+                if (workspace.id == current.id) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.check_circle_rounded, color: scheme.primary),
+                ],
+              ],
+            ),
             onTap: () {
               ref.read(currentWorkspaceIdProvider.notifier).select(workspace.id);
               onSwitched();

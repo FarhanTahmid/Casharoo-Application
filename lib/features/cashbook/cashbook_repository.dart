@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/db/local_store.dart';
+import '../../core/entitlements/entitlements.dart';
+import '../../core/entitlements/entitlements_controller.dart';
+import '../../core/entitlements/plan_guard.dart';
 import '../../core/providers.dart';
 
 /// Seeded into every new cashbook, same lists as the server uses.
@@ -46,10 +49,14 @@ class BreakdownRow {
 }
 
 class CashbookRepository {
-  CashbookRepository(this.db, this.store);
+  CashbookRepository(this.db, this.store, [this.plan]);
 
   final AppDatabase db;
   final LocalStore store;
+
+  /// Refuses what the plan does not allow with a PlanLimitException, before
+  /// anything is written. Without one nothing is checked here.
+  final PlanGuard? plan;
 
   static const _totals = "COALESCE(SUM(CASE WHEN e.entry_type = 'cash_in' THEN e.amount_minor END), 0) AS cash_in, "
       "COALESCE(SUM(CASE WHEN e.entry_type = 'cash_out' THEN e.amount_minor END), 0) AS cash_out";
@@ -148,7 +155,12 @@ class CashbookRepository {
     return switch (grant?.role) { 'admin' => 'admin', 'editor' => 'edit', _ => 'view' };
   }
 
-  Future<String> createCashbook(String workspaceId, String name, String currency) => db.transaction(() async {
+  Future<String> createCashbook(String workspaceId, String name, String currency) async {
+    await plan?.roomFor(F.businessCashbooks, workspaceId);
+    return _createCashbook(workspaceId, name, currency);
+  }
+
+  Future<String> _createCashbook(String workspaceId, String name, String currency) => db.transaction(() async {
         final bookId = await store.create('cashbooks', workspaceId, {
           'book_name': name,
           'description': null,
@@ -171,7 +183,10 @@ class CashbookRepository {
         return bookId;
       });
 
-  Future<void> renameCashbook(String bookId, String name) => store.update('cashbooks', bookId, {'book_name': name});
+  Future<void> renameCashbook(String bookId, String name) async {
+    plan?.writable(F.businessCashbooks, bookId);
+    await store.update('cashbooks', bookId, {'book_name': name});
+  }
 
   /// The server tombstones the book's entries, categories, payment methods and
   /// grants with it; the same happens here at once, without queueing them.
@@ -208,23 +223,26 @@ class CashbookRepository {
     String? remarks,
     String? categoryId,
     String? paymentMethodId,
-  }) =>
-      store.create(
-        'entries',
-        book.workspaceId,
-        {
-          'cashbook_id': book.id,
-          'entry_type': entryType,
-          'amount_minor': amountMinor,
-          'entry_date': entryDate,
-          'title': title,
-          'remarks': remarks,
-          'category_id': categoryId,
-          'payment_method_id': paymentMethodId,
-          'source': 'manual',
-        },
-        localOnly: {'currency': book.currency},
-      );
+  }) async {
+    // A locked book is read-only, entries included
+    plan?.writable(F.businessCashbooks, book.id);
+    return store.create(
+      'entries',
+      book.workspaceId,
+      {
+        'cashbook_id': book.id,
+        'entry_type': entryType,
+        'amount_minor': amountMinor,
+        'entry_date': entryDate,
+        'title': title,
+        'remarks': remarks,
+        'category_id': categoryId,
+        'payment_method_id': paymentMethodId,
+        'source': 'manual',
+      },
+      localOnly: {'currency': book.currency},
+    );
+  }
 
   /// Sends only the fields that differ from [original].
   Future<void> updateEntry(
@@ -235,21 +253,23 @@ class CashbookRepository {
     String? remarks,
     String? categoryId,
     String? paymentMethodId,
-  }) =>
-      store.update('entries', original.id, {
-        if (amountMinor != original.amountMinor) 'amount_minor': amountMinor,
-        if (entryDate != original.entryDate) 'entry_date': entryDate,
-        if (title != original.title) 'title': title,
-        if (remarks != original.remarks) 'remarks': remarks,
-        if (categoryId != original.categoryId) 'category_id': categoryId,
-        if (paymentMethodId != original.paymentMethodId) 'payment_method_id': paymentMethodId,
-      });
+  }) async {
+    plan?.writable(F.businessCashbooks, original.cashbookId);
+    return store.update('entries', original.id, {
+      if (amountMinor != original.amountMinor) 'amount_minor': amountMinor,
+      if (entryDate != original.entryDate) 'entry_date': entryDate,
+      if (title != original.title) 'title': title,
+      if (remarks != original.remarks) 'remarks': remarks,
+      if (categoryId != original.categoryId) 'category_id': categoryId,
+      if (paymentMethodId != original.paymentMethodId) 'payment_method_id': paymentMethodId,
+    });
+  }
 
   Future<void> deleteEntry(String entryId) => store.remove('entries', entryId);
 }
 
 final cashbookRepositoryProvider = Provider<CashbookRepository>(
-  (ref) => CashbookRepository(ref.watch(databaseProvider), ref.watch(localStoreProvider)),
+  (ref) => CashbookRepository(ref.watch(databaseProvider), ref.watch(localStoreProvider), ref.watch(planGuardProvider)),
 );
 
 final cashbooksProvider = StreamProvider.family<List<CashbookSummary>, String>(
