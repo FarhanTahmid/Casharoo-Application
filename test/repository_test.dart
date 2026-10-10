@@ -181,6 +181,10 @@ void main() {
       final month = await repo.watchMonth('ws1', DateTime(2026, 10, 15), 'BDT').first;
       expect((month.incomeMinor, month.expenseMinor), (80000, 5700)); // transfers are neither
       expect(month.byCategory.map((e) => (e.name, e.amountMinor)).toList(), [('Food', 5000), (null, 700)]);
+      // Food: two expenses this month, the bigger 4,000, against 9,999 the month before
+      final food = month.byCategory.first;
+      expect((food.count, food.largestMinor, food.previousMinor, food.changePercent), (2, 4000, 9999, -50));
+      expect(month.byCategory.last.changePercent, isNull);
 
       await repo.setBudget('ws1', foodId, 4500, 'BDT');
       await repo.setBudget('ws1', foodId, 4800, 'BDT'); // same category: updates, does not duplicate
@@ -197,8 +201,6 @@ void main() {
 
       final slice = (await repo.watchMonth('ws1', month, 'BDT').first).byCategory.single;
       expect((slice.categoryId, slice.color), (foodId, '#E8705F'));
-      final top = (await repo.watchTopCategories('ws1', month, 'BDT').first).single;
-      expect((top.categoryId, top.categoryColor), (foodId, '#E8705F'));
       expect((await repo.watchBudgets('ws1', month).first).single.categoryColor, '#E8705F');
       expect((await repo.watchTransactions('ws1').first).single.categoryColor, '#E8705F');
 
@@ -231,7 +233,7 @@ void main() {
       expect((await repo.watchBudgets('ws1', DateTime(2026, 12, 10)).first).single.budget.amountMinor, 5000);
     });
 
-    test('daily spend, six-month totals and top categories', () async {
+    test('daily spend, six-month totals and change on the month before', () async {
       final foodId = await repo.addCategory('ws1', 'Food', 'expense');
       final rentId = await repo.addCategory('ws1', 'Rent', 'expense');
       await repo.addTransaction(cash, kind: 'expense', amountMinor: 1000, occurredOn: '2026-10-03', categoryId: foodId);
@@ -248,8 +250,8 @@ void main() {
       expect(trend.map((m) => (m.incomeMinor, m.expenseMinor)).toList().sublist(3),
           [(50000, 0), (0, 1000), (0, 21500)]);
 
-      final top = await repo.watchTopCategories('ws1', DateTime(2026, 10), 'BDT').first;
-      expect(top.map((c) => (c.categoryName, c.thisMonthMinor, c.changePercent)).toList(),
+      final october = await repo.watchMonth('ws1', DateTime(2026, 10), 'BDT').first;
+      expect(october.byCategory.map((c) => (c.name, c.amountMinor, c.changePercent)).toList(),
           [('Rent', 20000, null), ('Food', 1500, 50)]);
 
       expect((await repo.watchTransactions('ws1', day: '2026-10-03').first).length, 4); // 2 expenses + 2 legs

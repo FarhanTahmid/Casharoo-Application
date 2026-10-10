@@ -12,6 +12,7 @@ import '../plan/plan_page.dart';
 import '../plan/plan_text.dart';
 import '../plan/upgrade_sheet.dart';
 import 'ledger_repository.dart';
+import 'spending_breakdown.dart';
 
 String accountKindLabel(BuildContext context, String kind) => switch (kind) {
       'bank' => context.l10n.kindBank,
@@ -45,17 +46,8 @@ final monthlyTotalsProvider = StreamProvider.family<List<MonthTotals>, (String, 
       ref.watch(ledgerRepositoryProvider).watchMonthlyTotals(key.$1, ref.watch(selectedMonthProvider), key.$2),
 );
 
-final topCategoriesProvider = StreamProvider.family<List<CategoryChange>, (String, String)>(
-  (ref, key) =>
-      ref.watch(ledgerRepositoryProvider).watchTopCategories(key.$1, ref.watch(selectedMonthProvider), key.$2),
-);
-
-String _localDigits(BuildContext context, String text) =>
-    context.languageCode == 'bn' ? Money.toBengaliDigits(text) : text;
-
 /// Balances, the selected month's income and expense, how spending is pacing
-/// against the budgets, where the money went, how the last six months compare
-/// and which categories moved most.
+/// against the budgets, where the money went and how the last six months compare.
 /// Figures are in the workspace currency; accounts in other currencies are listed, not added up.
 class OverviewPage extends ConsumerWidget {
   const OverviewPage({super.key, required this.workspace});
@@ -74,7 +66,6 @@ class OverviewPage extends ConsumerWidget {
         .fold<int>(0, (sum, a) => sum + a.balanceMinor);
     final month = ref.watch(monthSummaryProvider(key)).value;
     final trend = ref.watch(monthlyTotalsProvider(key)).value ?? const <MonthTotals>[];
-    final top = ref.watch(topCategoriesProvider(key)).value ?? const <CategoryChange>[];
     final budgets = ref.watch(budgetsProvider(workspace.id)).value ?? const <BudgetProgress>[];
     final budgetTotal =
         budgets.where((b) => b.budget.currency == currency).fold<int>(0, (sum, b) => sum + b.budget.amountMinor);
@@ -143,105 +134,13 @@ class OverviewPage extends ConsumerWidget {
                 child: SectionCard(title: l10n.spendingByCategory, children: [
                   if (month.byCategory.isEmpty)
                     Text(l10n.noSpendingYet, style: text.bodyMedium?.copyWith(color: context.colors.muted))
-                  else ...[
-                    SizedBox(
-                      height: 190,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          PieChart(
-                            PieChartData(
-                              sectionsSpace: 3,
-                              centerSpaceRadius: 62,
-                              startDegreeOffset: -90,
-                              sections: [
-                                for (final slice in month.byCategory)
-                                  PieChartSectionData(
-                                    value: slice.amountMinor.toDouble(),
-                                    color: categoryFill(slice.color, slice.categoryId),
-                                    showTitle: false,
-                                    radius: 26,
-                                  ),
-                              ],
-                            ),
-                            duration: context.motion(AppMotion.emphasised),
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(l10n.spent, style: text.bodySmall),
-                              SizedBox(
-                                width: 108,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    Money.compact(month.expenseMinor, currency, locale: context.languageCode),
-                                    style: text.headlineSmall?.copyWith(fontFeatures: tabularFigures),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final slice in month.byCategory)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            ColorDot(categoryFill(slice.color, slice.categoryId)),
-                            const SizedBox(width: 10),
-                            Expanded(child: Text(slice.name ?? l10n.uncategorised, overflow: TextOverflow.ellipsis)),
-                            if (month.expenseMinor > 0)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: Text(
-                                  _localDigits(context, '${(slice.amountMinor * 100 / month.expenseMinor).round()}%'),
-                                  style: text.bodySmall,
-                                ),
-                              ),
-                            Text(
-                              context.money(slice.amountMinor, currency),
-                              style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontFeatures: tabularFigures),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                  else
+                    SpendingBreakdown(month: month, currency: currency, budgets: budgets),
                 ]),
               ),
             ],
             if (trend.any((m) => m.incomeMinor > 0 || m.expenseMinor > 0))
               SectionCard(title: l10n.lastSixMonths, children: [_TrendChart(trend: trend, currency: currency)]),
-            if (top.isNotEmpty)
-              SectionCard(title: l10n.topCategories, children: [
-                for (final item in top)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        ColorDot(categoryFill(item.categoryColor, item.categoryId)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.categoryName ?? l10n.uncategorised, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 2),
-                              _ChangeChip(percent: item.changePercent),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          context.money(item.thisMonthMinor, currency),
-                          style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontFeatures: tabularFigures),
-                        ),
-                      ],
-                    ),
-                  ),
-              ]),
             if (accounts.isNotEmpty)
               SectionCard(title: l10n.accountBalances, children: [
                 for (final item in accounts.where((a) => !a.account.isArchived))
@@ -263,37 +162,6 @@ class OverviewPage extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// "+12% vs last month" in red when spending rose, green when it fell.
-class _ChangeChip extends StatelessWidget {
-  const _ChangeChip({required this.percent});
-
-  /// Null: the category had no spending last month.
-  final int? percent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final rose = (percent ?? 0) > 0;
-    final color = percent == null ? context.colors.muted : context.amountColor(!rose);
-    final signed = percent == null ? null : _localDigits(context, '${rose ? '+' : ''}$percent');
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (percent != null && percent != 0)
-          Icon(rose ? Icons.trending_up_rounded : Icons.trending_down_rounded, size: 14, color: color),
-        if (percent != null && percent != 0) const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            signed == null ? l10n.newThisMonth : l10n.changeVsLastMonth(signed),
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
-          ),
-        ),
-      ],
     );
   }
 }

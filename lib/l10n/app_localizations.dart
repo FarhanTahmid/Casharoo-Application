@@ -1088,12 +1088,6 @@ abstract class AppLocalizations {
   /// **'Last 6 months'**
   String get lastSixMonths;
 
-  /// No description provided for @topCategories.
-  ///
-  /// In en, this message translates to:
-  /// **'Top spending'**
-  String get topCategories;
-
   /// No description provided for @changeVsLastMonth.
   ///
   /// In en, this message translates to:
@@ -1891,6 +1885,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Locked'**
   String get lockedTag;
+
+  /// No description provided for @spendInsightTop.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} takes {percent}% of what you spent.'**
+  String spendInsightTop(String name, String percent);
+
+  /// No description provided for @spendInsightRise.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is up {percent}% on last month.'**
+  String spendInsightRise(String name, String percent);
+
+  /// No description provided for @spendTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a category for details'**
+  String get spendTapHint;
+
+  /// No description provided for @shareOfSpending.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of spending'**
+  String shareOfSpending(String percent);
+
+  /// No description provided for @statAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get statAverage;
+
+  /// No description provided for @statLargest.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest'**
+  String get statLargest;
+
+  /// No description provided for @moreCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String moreCategories(String count);
+
+  /// No description provided for @showLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLess;
 }
 
 class _AppLocalizationsDelegate

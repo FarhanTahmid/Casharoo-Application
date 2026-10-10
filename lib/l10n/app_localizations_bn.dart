@@ -554,9 +554,6 @@ class AppLocalizationsBn extends AppLocalizations {
   String get lastSixMonths => 'গত ৬ মাস';
 
   @override
-  String get topCategories => 'সবচেয়ে বেশি খরচ';
-
-  @override
   String changeVsLastMonth(String percent) {
     return 'গত মাসের তুলনায় $percent%';
   }
@@ -1018,4 +1015,36 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get lockedTag => 'লক করা';
+
+  @override
+  String spendInsightTop(String name, String percent) {
+    return 'আপনার খরচের $percent% গেছে $name খাতে।';
+  }
+
+  @override
+  String spendInsightRise(String name, String percent) {
+    return 'গত মাসের তুলনায় $name খাতে খরচ $percent% বেড়েছে।';
+  }
+
+  @override
+  String get spendTapHint => 'বিস্তারিত দেখতে কোনো খাতে ট্যাপ করুন';
+
+  @override
+  String shareOfSpending(String percent) {
+    return 'মোট খরচের $percent%';
+  }
+
+  @override
+  String get statAverage => 'গড়';
+
+  @override
+  String get statLargest => 'সর্বোচ্চ';
+
+  @override
+  String moreCategories(String count) {
+    return 'আরও $countটি খাত';
+  }
+
+  @override
+  String get showLess => 'কম দেখান';
 }

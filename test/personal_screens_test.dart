@@ -9,6 +9,7 @@ import 'package:spendroo/core/theme.dart';
 import 'package:spendroo/features/personal/budget_calendar_page.dart';
 import 'package:spendroo/features/personal/categories_page.dart';
 import 'package:spendroo/features/personal/ledger_repository.dart';
+import 'package:spendroo/features/personal/personal_pages.dart';
 import 'package:spendroo/l10n/app_localizations.dart';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
@@ -232,6 +233,52 @@ void main() {
     expect(find.text('Your Free plan allows 2 categories of your own.'), findsOneWidget);
     expect(find.text('Travel'), findsNothing);
     expect((await app.run(() => app.db.select(app.db.outbox).get())).length, queued);
+    await app.stop();
+  });
+
+  testWidgets('overview: where the money went, in the colours of the categories, with details on a tap', (tester) async {
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    final app = ScreenHarness(tester);
+    await app.run(() async {
+      await app.db.into(app.db.workspaces).insert(workspace);
+      await app.ledger.addAccount(workspace.id, name: 'Cash', kind: 'cash', currency: 'BDT');
+      final cash = (await app.ledger.watchAccounts(workspace.id).first).single.account;
+      final rent = await app.ledger.addCategory(workspace.id, 'Housing', 'expense', color: '#2F6FD0');
+      final food = await app.ledger.addCategory(workspace.id, 'Food', 'expense', color: '#F08A3C');
+      Future<void> spend(String category, int amount, String day) => app.ledger
+          .addTransaction(cash, kind: 'expense', amountMinor: amount, occurredOn: day, categoryId: category);
+      await spend(rent, 1800000, '2026-10-05');
+      await spend(food, 40000, '2026-10-02');
+      await spend(food, 20000, '2026-10-07');
+      await spend(food, 30000, '2026-09-11');
+      await app.ledger.setBudget(workspace.id, food, 100000, 'BDT');
+      await app.db.delete(app.db.workspaces).go();
+    });
+
+    await app.show(const Scaffold(body: OverviewPage(workspace: workspace)));
+    expect(tester.takeException(), isNull);
+    expect(find.text('Housing takes 97% of what you spent.'), findsOneWidget);
+    expect(find.text('Food is up 100% on last month.'), findsOneWidget);
+    expect(find.text('Top spending'), findsNothing); // said once, in the breakdown
+    expect(tester.widgetList<ColorDot>(find.byType(ColorDot)).map((d) => d.color).toList(),
+        const [Color(0xFF2F6FD0), Color(0xFFF08A3C)]);
+
+    await tester.tap(find.text('Food'));
+    await app.settle();
+    expect(find.text('3% of spending'), findsOneWidget);
+    expect(find.text('+100% vs last month'), findsOneWidget);
+    expect(find.text('৳400.00'), findsOneWidget); // the largest of the two
+    expect(find.text('৳300.00'), findsOneWidget); // their average
+    expect(find.text('৳600.00 of ৳1,000.00'), findsOneWidget);
+
+    // Another month: September had Food alone, so nothing is left in focus that is not there
+    app.container.read(selectedMonthProvider.notifier).set(DateTime(2026, 9));
+    await app.settle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('100% of spending'), findsOneWidget);
+    expect(find.text('Housing'), findsNothing);
     await app.stop();
   });
 }

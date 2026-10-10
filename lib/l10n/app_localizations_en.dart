@@ -558,9 +558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastSixMonths => 'Last 6 months';
 
   @override
-  String get topCategories => 'Top spending';
-
-  @override
   String changeVsLastMonth(String percent) {
     return '$percent% vs last month';
   }
@@ -1053,4 +1050,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lockedTag => 'Locked';
+
+  @override
+  String spendInsightTop(String name, String percent) {
+    return '$name takes $percent% of what you spent.';
+  }
+
+  @override
+  String spendInsightRise(String name, String percent) {
+    return '$name is up $percent% on last month.';
+  }
+
+  @override
+  String get spendTapHint => 'Tap a category for details';
+
+  @override
+  String shareOfSpending(String percent) {
+    return '$percent% of spending';
+  }
+
+  @override
+  String get statAverage => 'Average';
+
+  @override
+  String get statLargest => 'Largest';
+
+  @override
+  String moreCategories(String count) {
+    return '$count more';
+  }
+
+  @override
+  String get showLess => 'Show less';
 }

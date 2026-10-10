@@ -55,25 +55,10 @@ class MonthTotals {
   final int expenseMinor;
 }
 
-/// Spending in a category this month against the month before.
-class CategoryChange {
-  CategoryChange(this.categoryId, this.categoryName, this.categoryColor, this.thisMonthMinor, this.lastMonthMinor);
-
-  /// Null: uncategorised.
-  final String? categoryId;
-  final String? categoryName;
-  final String? categoryColor;
-  final int thisMonthMinor;
-  final int lastMonthMinor;
-
-  /// Percentage change, or null when there was nothing to compare with.
-  int? get changePercent =>
-      lastMonthMinor == 0 ? null : ((thisMonthMinor - lastMonthMinor) * 100 / lastMonthMinor).round();
-}
-
 /// What one category took of a month's spending.
 class CategorySpend {
-  CategorySpend(this.categoryId, this.name, this.color, this.amountMinor);
+  CategorySpend(this.categoryId, this.name, this.color, this.amountMinor,
+      {this.count = 0, this.largestMinor = 0, this.previousMinor = 0});
 
   /// Null: uncategorised.
   final String? categoryId;
@@ -82,6 +67,16 @@ class CategorySpend {
 
   /// Positive number.
   final int amountMinor;
+
+  /// How many expenses make up [amountMinor], and the biggest of them (positive).
+  final int count;
+  final int largestMinor;
+
+  /// Spent in the category the month before (positive).
+  final int previousMinor;
+
+  /// Percentage change on the month before, or null when there was nothing to compare with.
+  int? get changePercent => previousMinor == 0 ? null : ((amountMinor - previousMinor) * 100 / previousMinor).round();
 }
 
 class MonthSummary {
@@ -266,58 +261,28 @@ class LedgerRepository {
     });
   }
 
-  /// The categories spent on most in [month], each with the month before for comparison.
-  Stream<List<CategoryChange>> watchTopCategories(String workspaceId, DateTime month, String currency,
-      {int limit = 5}) {
+  /// Income, expense and expense-by-category for one month, in one currency.
+  /// Each category also carries what it took the month before.
+  Stream<MonthSummary> watchMonth(String workspaceId, DateTime month, String currency) {
     final (first, last) = monthRange(month);
     final (previousFirst, _) = monthRange(DateTime(month.year, month.month - 1, 1));
     return db
         .customSelect(
-          'SELECT c.id AS c_id, c.name AS c_name, c.color AS c_color, '
-          'SUM(CASE WHEN t.occurred_on >= ? THEN -t.amount_minor ELSE 0 END) AS this_month, '
-          'SUM(CASE WHEN t.occurred_on < ? THEN -t.amount_minor ELSE 0 END) AS last_month '
-          'FROM transactions t LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL '
-          "WHERE t.workspace_id = ? AND t.deleted_at IS NULL AND t.kind = 'expense' AND t.currency = ? "
-          'AND t.occurred_on BETWEEN ? AND ? GROUP BY c.id HAVING this_month > 0 '
-          'ORDER BY this_month DESC LIMIT ?',
-          variables: [
-            Variable<String>(first),
-            Variable<String>(first),
-            Variable<String>(workspaceId),
-            Variable<String>(currency),
-            Variable<String>(previousFirst),
-            Variable<String>(last),
-            Variable<int>(limit),
-          ],
-          readsFrom: {db.transactions, db.categories},
-        )
-        .watch()
-        .map((rows) => [
-              for (final row in rows)
-                CategoryChange(
-                  row.readNullable<String>('c_id'),
-                  row.readNullable<String>('c_name'),
-                  row.readNullable<String>('c_color'),
-                  row.read<int>('this_month'),
-                  row.read<int>('last_month'),
-                ),
-            ]);
-  }
-
-  /// Income, expense and expense-by-category for one month, in one currency.
-  Stream<MonthSummary> watchMonth(String workspaceId, DateTime month, String currency) {
-    final (first, last) = monthRange(month);
-    return db
-        .customSelect(
-          'SELECT t.kind AS kind, c.id AS c_id, c.name AS c_name, c.color AS c_color, SUM(t.amount_minor) AS total '
+          'SELECT t.kind AS kind, c.id AS c_id, c.name AS c_name, c.color AS c_color, '
+          'SUM(CASE WHEN t.occurred_on >= ? THEN t.amount_minor ELSE 0 END) AS total, '
+          'SUM(CASE WHEN t.occurred_on < ? THEN t.amount_minor ELSE 0 END) AS previous, '
+          'SUM(CASE WHEN t.occurred_on >= ? THEN 1 ELSE 0 END) AS n, '
+          // Expenses are negative, so the smallest is the biggest
+          'MIN(CASE WHEN t.occurred_on >= ? THEN t.amount_minor END) AS largest '
           'FROM transactions t '
           'LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL '
           "WHERE t.workspace_id = ? AND t.deleted_at IS NULL AND t.kind != 'transfer' AND t.currency = ? "
           'AND t.occurred_on BETWEEN ? AND ? GROUP BY t.kind, c.id',
           variables: [
+            for (var i = 0; i < 4; i++) Variable<String>(first),
             Variable<String>(workspaceId),
             Variable<String>(currency),
-            Variable<String>(first),
+            Variable<String>(previousFirst),
             Variable<String>(last),
           ],
           readsFrom: {db.transactions, db.categories},
@@ -328,6 +293,8 @@ class LedgerRepository {
       final byCategory = <CategorySpend>[];
       for (final row in rows) {
         final total = row.read<int>('total');
+        final count = row.read<int>('n');
+        if (count == 0) continue; // only the month before
         if (row.read<String>('kind') == 'income') {
           income += total;
         } else {
@@ -337,6 +304,9 @@ class LedgerRepository {
             row.readNullable<String>('c_name'),
             row.readNullable<String>('c_color'),
             -total,
+            count: count,
+            largestMinor: -(row.readNullable<int>('largest') ?? 0),
+            previousMinor: -row.read<int>('previous'),
           ));
         }
       }

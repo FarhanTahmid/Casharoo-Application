@@ -185,7 +185,6 @@
   "@deleteCategoryConfirm": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
   "net": "Net",
   "lastSixMonths": "Last 6 months",
-  "topCategories": "Top spending",
   "changeVsLastMonth": "{percent}% vs last month",
   "@changeVsLastMonth": {"placeholders": {"percent": {"type": "String"}}},
   "newThisMonth": "New this month",
@@ -346,5 +345,18 @@
   "offerClaim": "Get it",
   "offerClaimed": "It is yours now. Enjoy!",
   "offerActive": "On for you",
-  "lockedTag": "Locked"
+  "lockedTag": "Locked",
+
+  "spendInsightTop": "{name} takes {percent}% of what you spent.",
+  "@spendInsightTop": {"placeholders": {"name": {"type": "String"}, "percent": {"type": "String"}}},
+  "spendInsightRise": "{name} is up {percent}% on last month.",
+  "@spendInsightRise": {"placeholders": {"name": {"type": "String"}, "percent": {"type": "String"}}},
+  "spendTapHint": "Tap a category for details",
+  "shareOfSpending": "{percent}% of spending",
+  "@shareOfSpending": {"placeholders": {"percent": {"type": "String"}}},
+  "statAverage": "Average",
+  "statLargest": "Largest",
+  "moreCategories": "{count} more",
+  "@moreCategories": {"placeholders": {"count": {"type": "String"}}},
+  "showLess": "Show less"
 }

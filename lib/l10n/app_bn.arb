@@ -176,7 +176,6 @@
   "deleteCategoryConfirm": "\"{name}\" মুছবেন? {count, plural, =0{এর বাজেটও মুছে যাবে।} other{{count}টি লেনদেন খাত ছাড়া থেকে যাবে, আর এর বাজেট মুছে যাবে।}}",
   "net": "নিট",
   "lastSixMonths": "গত ৬ মাস",
-  "topCategories": "সবচেয়ে বেশি খরচ",
   "changeVsLastMonth": "গত মাসের তুলনায় {percent}%",
   "newThisMonth": "এই মাসে নতুন",
   "accountBalances": "অ্যাকাউন্টের ব্যালেন্স",
@@ -312,5 +311,14 @@
   "offerClaim": "নিয়ে নিন",
   "offerClaimed": "এখন এটি আপনার। উপভোগ করুন!",
   "offerActive": "আপনার জন্য চালু",
-  "lockedTag": "লক করা"
+  "lockedTag": "লক করা",
+
+  "spendInsightTop": "আপনার খরচের {percent}% গেছে {name} খাতে।",
+  "spendInsightRise": "গত মাসের তুলনায় {name} খাতে খরচ {percent}% বেড়েছে।",
+  "spendTapHint": "বিস্তারিত দেখতে কোনো খাতে ট্যাপ করুন",
+  "shareOfSpending": "মোট খরচের {percent}%",
+  "statAverage": "গড়",
+  "statLargest": "সর্বোচ্চ",
+  "moreCategories": "আরও {count}টি খাত",
+  "showLess": "কম দেখান"
 }
