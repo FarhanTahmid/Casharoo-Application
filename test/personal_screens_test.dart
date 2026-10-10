@@ -1,6 +1,7 @@
 import 'package:spendroo/core/api/api_client.dart';
 import 'package:spendroo/core/db/database.dart';
 import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/core/design/category_color.dart';
 import 'package:spendroo/core/entitlements/entitlements.dart';
 import 'package:spendroo/core/entitlements/entitlements_controller.dart';
 import 'package:spendroo/core/providers.dart';
@@ -140,7 +141,7 @@ void main() {
     await app.stop();
   });
 
-  testWidgets('categories: add, rename and delete', (tester) async {
+  testWidgets('categories: add, rename, recolour and delete', (tester) async {
     final app = ScreenHarness(tester);
     await app.run(() async {
       await app.db.into(app.db.workspaces).insert(workspace);
@@ -157,9 +158,23 @@ void main() {
     await tester.tap(find.text('Food'));
     await app.settle();
     await tester.enterText(find.byType(TextField), 'Groceries');
+    await tester.tap(find.byWidgetPredicate((w) => w is ColoredBox && w.color == categoryPalette[3]));
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await app.settle();
     expect(find.text('Groceries'), findsOneWidget);
+    Future<String?> groceriesColor() async =>
+        (await app.run(() => app.ledger.watchCategories(workspace.id).first)).firstWhere((c) => c.name == 'Groceries').color;
+    expect(await groceriesColor(), toHexColor(categoryPalette[3]));
+
+    // "Automatic" hands the choice back to the app
+    await tester.tap(find.text('Groceries'));
+    await app.settle();
+    await tester.tap(find.byTooltip('Automatic'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await app.settle();
+    expect(await groceriesColor(), isNull);
 
     await tester.tap(find.text('New category'));
     await app.settle();

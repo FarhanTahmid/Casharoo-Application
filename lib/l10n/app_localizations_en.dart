@@ -520,7 +520,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCategories => 'No categories yet.';
 
   @override
-  String get renameCategory => 'Rename category';
+  String get editCategory => 'Edit category';
+
+  @override
+  String get colour => 'Colour';
+
+  @override
+  String get automaticColour => 'Automatic';
+
+  @override
+  String get customColour => 'Custom colour';
+
+  @override
+  String get colourHue => 'Hue';
+
+  @override
+  String get colourShade => 'Shade';
 
   @override
   String deleteCategoryConfirm(String name, int count) {

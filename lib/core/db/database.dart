@@ -46,6 +46,9 @@ class EntryCategories extends Table with SyncColumns {
   TextColumn get cashbookId => text()();
   TextColumn get categoryName => text()();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+
+  /// '#RRGGBB' the user chose; null leaves the colour to the app (categoryFill).
+  TextColumn get color => text().nullable()();
 }
 
 class PaymentMethods extends Table with SyncColumns {
@@ -90,6 +93,9 @@ class Categories extends Table with SyncColumns {
   /// One of the categories every account starts with. Set by the server only;
   /// the plan's limit on categories counts the others.
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+
+  /// '#RRGGBB' the user chose; null leaves the colour to the app (categoryFill).
+  TextColumn get color => text().nullable()();
 }
 
 @TableIndex(name: 'transactions_account_date', columns: {#accountId, #occurredOn})
@@ -188,7 +194,7 @@ class AppDatabase extends _$AppDatabase {
   // Every change: bump this, run `dart run drift_dev make-migrations`, add the
   // step below. The generated tests in test/drift/ check each step.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -199,6 +205,12 @@ class AppDatabase extends _$AppDatabase {
           from2To3: (m, schema) async {
             await m.addColumn(schema.categories, schema.categories.isDefault);
             // Rows already on the phone were pulled without the marker: pull them again
+            await customStatement('DELETE FROM sync_cursors');
+          },
+          from3To4: (m, schema) async {
+            await m.addColumn(schema.categories, schema.categories.color);
+            await m.addColumn(schema.entryCategories, schema.entryCategories.color);
+            // A colour chosen on another device may have been pulled without its column: pull again
             await customStatement('DELETE FROM sync_cursors');
           },
         ),

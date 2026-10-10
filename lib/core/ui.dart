@@ -10,6 +10,7 @@ export 'package:flutter/services.dart' show HapticFeedback, SystemUiOverlayStyle
 export 'design/amounts.dart';
 export 'design/avatar.dart';
 export 'design/buttons.dart';
+export 'design/category_color.dart';
 export 'design/fields.dart';
 export 'design/keypad.dart';
 export 'design/layout.dart';

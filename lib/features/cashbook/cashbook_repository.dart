@@ -30,20 +30,27 @@ class CashbookSummary {
 }
 
 class EntryView {
-  EntryView(this.entry, this.categoryName, this.paymentMethodName);
+  EntryView(this.entry, this.categoryName, this.paymentMethodName, {this.categoryColor});
 
   final Entry entry;
   final String? categoryName;
+
+  /// What was chosen for the category, if anything (see categoryFill).
+  final String? categoryColor;
   final String? paymentMethodName;
 
   bool get isCashIn => entry.entryType == 'cash_in';
 }
 
 class BreakdownRow {
-  BreakdownRow(this.name, this.cashInMinor, this.cashOutMinor);
+  BreakdownRow(this.name, this.cashInMinor, this.cashOutMinor, {this.id, this.color});
 
   /// Null for entries without a category or payment method.
+  final String? id;
   final String? name;
+
+  /// A category's chosen colour; payment methods have none.
+  final String? color;
   final int cashInMinor;
   final int cashOutMinor;
 }
@@ -100,7 +107,7 @@ class CashbookRepository {
 
   Stream<List<EntryView>> watchEntries(String bookId) => db
       .customSelect(
-        'SELECT e.*, c.category_name AS c_name, p.payment_method_name AS p_name FROM entries e '
+        'SELECT e.*, c.category_name AS c_name, c.color AS c_color, p.payment_method_name AS p_name FROM entries e '
         'LEFT JOIN entry_categories c ON c.id = e.category_id '
         'LEFT JOIN payment_methods p ON p.id = e.payment_method_id '
         'WHERE e.cashbook_id = ? AND e.deleted_at IS NULL ORDER BY e.entry_date DESC, e.created_at DESC',
@@ -110,7 +117,12 @@ class CashbookRepository {
       .watch()
       .map((rows) => [
             for (final row in rows)
-              EntryView(db.entries.map(row.data), row.readNullable<String>('c_name'), row.readNullable<String>('p_name')),
+              EntryView(
+                db.entries.map(row.data),
+                row.readNullable<String>('c_name'),
+                row.readNullable<String>('p_name'),
+                categoryColor: row.readNullable<String>('c_color'),
+              ),
           ]);
 
   Stream<List<EntryCategory>> watchCategories(String bookId) => (db.select(db.entryCategories)
@@ -131,15 +143,22 @@ class CashbookRepository {
     final name = byCategory ? 'x.category_name' : 'x.payment_method_name';
     return db
         .customSelect(
-          'SELECT $name AS name, $_totals FROM entries e $join '
-          'WHERE e.cashbook_id = ? AND e.deleted_at IS NULL GROUP BY $name ORDER BY cash_out DESC, cash_in DESC',
+          'SELECT x.id AS x_id, $name AS name, ${byCategory ? 'x.color' : 'NULL'} AS color, $_totals '
+          'FROM entries e $join '
+          'WHERE e.cashbook_id = ? AND e.deleted_at IS NULL GROUP BY x.id ORDER BY cash_out DESC, cash_in DESC',
           variables: [Variable<String>(bookId)],
           readsFrom: {db.entries, db.entryCategories, db.paymentMethods},
         )
         .watch()
         .map((rows) => [
               for (final row in rows)
-                BreakdownRow(row.readNullable<String>('name'), row.read<int>('cash_in'), row.read<int>('cash_out')),
+                BreakdownRow(
+                  row.readNullable<String>('name'),
+                  row.read<int>('cash_in'),
+                  row.read<int>('cash_out'),
+                  id: row.readNullable<String>('x_id'),
+                  color: row.readNullable<String>('color'),
+                ),
             ]);
   }
 
@@ -202,11 +221,26 @@ class CashbookRepository {
         }
       });
 
-  Future<String> addCategory(Cashbook book, String name) => store.create('entry_categories', book.workspaceId, {
+  /// [color] is '#RRGGBB'; without one the app picks the colour (categoryFill).
+  Future<String> addCategory(Cashbook book, String name, {String? color}) =>
+      store.create('entry_categories', book.workspaceId, {
         'cashbook_id': book.id,
         'category_name': name,
         'is_default': false,
+        if (color != null) 'color': color,
       });
+
+  /// Sends only what differs from [category]. A null [color] hands the choice back to the app.
+  Future<void> updateCategory(EntryCategory category, {required String name, required String? color}) async {
+    final changes = {
+      if (name != category.categoryName) 'category_name': name,
+      if (color != category.color) 'color': color,
+    };
+    if (changes.isEmpty) return;
+    // A locked book is read-only, its categories included
+    plan?.writable(F.businessCashbooks, category.cashbookId);
+    await store.update('entry_categories', category.id, changes);
+  }
 
   Future<String> addPaymentMethod(Cashbook book, String name) => store.create('payment_methods', book.workspaceId, {
         'cashbook_id': book.id,

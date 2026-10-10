@@ -70,11 +70,14 @@ class _AppSearchFieldState extends State<AppSearchField> {
 
 /// One thing a [SelectField] can be set to.
 class SelectOption<T> {
-  const SelectOption(this.value, this.label, {this.icon, this.detail});
+  const SelectOption(this.value, this.label, {this.icon, this.detail, this.color});
 
   final T value;
   final String label;
   final IconData? icon;
+
+  /// Shown as a dot before the label: the colour of a category.
+  final Color? color;
 
   /// A quieter second line.
   final String? detail;
@@ -219,6 +222,7 @@ class _SelectSheetState<T> extends State<_SelectSheet<T>> {
       required String label,
       required VoidCallback onTap,
       IconData? icon,
+      Color? color,
       String? detail,
       bool selected = false,
       bool action = false,
@@ -226,7 +230,9 @@ class _SelectSheetState<T> extends State<_SelectSheet<T>> {
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
           minTileHeight: 56,
-          leading: icon == null
+          leading: color != null
+              ? SizedBox(width: 36, height: 36, child: Center(child: ColorDot(color, size: 16)))
+              : icon == null
               ? null
               : CircleAvatar(
                   radius: 18,
@@ -278,6 +284,7 @@ class _SelectSheetState<T> extends State<_SelectSheet<T>> {
                   row(
                     label: option.label,
                     icon: option.icon,
+                    color: option.color,
                     detail: option.detail,
                     selected: option.value == widget.value,
                     onTap: () => Navigator.pop(context, _Picked<T>(option.value)),

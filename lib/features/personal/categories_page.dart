@@ -11,7 +11,7 @@ import '../plan/plan_text.dart';
 import '../plan/upgrade_sheet.dart';
 import 'ledger_repository.dart';
 
-/// Expense and income categories of the personal workspace: add, rename, delete.
+/// Expense and income categories of the personal workspace: add, rename, recolour, delete.
 class CategoriesPage extends ConsumerWidget {
   const CategoriesPage({super.key});
 
@@ -36,7 +36,6 @@ class CategoriesPage extends ConsumerWidget {
                 for (final kind in const ['expense', 'income'])
                   _CategoryList(
                     categories: categories.where((c) => c.kind == kind).toList(),
-                    kind: kind,
                     workspace: workspace,
                   ),
               ],
@@ -47,11 +46,13 @@ class CategoriesPage extends ConsumerWidget {
             label: Text(l10n.newCategory),
             onPressed: () async {
               final kind = DefaultTabController.of(context).index == 0 ? 'expense' : 'income';
-              final name = await promptText(context, title: l10n.newCategory, label: l10n.categoryName);
-              if (name == null || !context.mounted) return;
+              final edited = await showCategorySheet(context, title: l10n.newCategory);
+              if (edited == null || !context.mounted) return;
               final added = await guarded(
                 context,
-                () => ref.read(ledgerRepositoryProvider).addCategory(workspace.id, name, kind),
+                () => ref
+                    .read(ledgerRepositoryProvider)
+                    .addCategory(workspace.id, edited.name, kind, color: edited.color),
               );
               if (added && context.mounted) showEventBurst(context, AppEvent.saved);
             },
@@ -63,10 +64,9 @@ class CategoriesPage extends ConsumerWidget {
 }
 
 class _CategoryList extends ConsumerWidget {
-  const _CategoryList({required this.categories, required this.kind, required this.workspace});
+  const _CategoryList({required this.categories, required this.workspace});
 
   final List<Category> categories;
-  final String kind;
   final Workspace workspace;
 
   @override
@@ -74,7 +74,6 @@ class _CategoryList extends ConsumerWidget {
     final l10n = context.l10n;
     final repo = ref.read(ledgerRepositoryProvider);
     if (categories.isEmpty) return EmptyState(icon: Icons.sell_outlined, message: l10n.noCategories);
-    final tint = context.amountColor(kind == 'income');
     final text = Theme.of(context).textTheme;
     final plan = ref.watch(entitlementsProvider).value;
     // Shown only where the plan limits them, and only to the person whose plan it is
@@ -96,7 +95,7 @@ class _CategoryList extends ConsumerWidget {
               for (final (index, category) in categories.indexed) ...[
                 if (index > 0) const Divider(indent: 68),
                 ListTile(
-                  leading: IconBadge(Icons.sell_outlined, color: tint, size: 36),
+                  leading: IconBadge(Icons.sell_outlined, color: context.categoryTint(category.color, category.id), size: 36),
                   title: Text(category.name),
                   // The ones every account starts with are free; a quiet tag tells them apart
                   subtitle: category.isDefault
@@ -105,10 +104,11 @@ class _CategoryList extends ConsumerWidget {
                           ? const Align(alignment: Alignment.centerLeft, child: LockedTag())
                           : null,
                   onTap: () async {
-                    final name = await promptText(context,
-                        title: l10n.renameCategory, label: l10n.categoryName, initial: category.name);
-                    if (name != null && context.mounted) {
-                      await guarded(context, () => repo.renameCategory(category, name));
+                    final edited = await showCategorySheet(context,
+                        title: l10n.editCategory, initialName: category.name, initialColor: category.color);
+                    if (edited != null && context.mounted) {
+                      await guarded(
+                          context, () => repo.updateCategory(category, name: edited.name, color: edited.color));
                     }
                   },
                   trailing: IconButton(

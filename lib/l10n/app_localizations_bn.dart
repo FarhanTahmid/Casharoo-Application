@@ -519,7 +519,22 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noCategories => 'এখনো কোনো খাত নেই।';
 
   @override
-  String get renameCategory => 'খাতের নাম বদলান';
+  String get editCategory => 'খাত সম্পাদনা';
+
+  @override
+  String get colour => 'রং';
+
+  @override
+  String get automaticColour => 'স্বয়ংক্রিয়';
+
+  @override
+  String get customColour => 'নিজের রং';
+
+  @override
+  String get colourHue => 'রঙের ধরন';
+
+  @override
+  String get colourShade => 'গাঢ়তা';
 
   @override
   String deleteCategoryConfirm(String name, int count) {

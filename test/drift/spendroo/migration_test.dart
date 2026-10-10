@@ -9,6 +9,7 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -215,6 +216,60 @@ void main() {
         // What was waiting to be sent, and the settings, are untouched
         expect((await newDb.select(newDb.outbox).getSingle()).mutationId, 'm1');
         expect((await newDb.select(newDb.settings).getSingle()).value, 'bn');
+      },
+    );
+  });
+
+  // Version 4 gives categories a colour. One chosen on another device may have
+  // been pulled before the column existed, so the pull starts over here too.
+  test('migration from v3 to v4 keeps categories, without a colour, and pulls them again', () async {
+    const stamps = (createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-02T00:00:00Z');
+    await verifier.testWithDataIntegrity(
+      oldVersion: 3,
+      newVersion: 4,
+      createOld: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insert(
+          oldDb.categories,
+          v3.CategoriesData(
+            id: 'c1',
+            workspaceId: 'w1',
+            version: 3,
+            serverSeq: 12,
+            createdAt: stamps.createdAt,
+            updatedAt: stamps.updatedAt,
+            name: 'Food',
+            kind: 'expense',
+            isDefault: true,
+          ),
+        );
+        batch.insert(
+          oldDb.entryCategories,
+          v3.EntryCategoriesData(
+            id: 'e1',
+            workspaceId: 'w2',
+            version: 1,
+            serverSeq: 5,
+            createdAt: stamps.createdAt,
+            updatedAt: stamps.updatedAt,
+            cashbookId: 'b1',
+            categoryName: 'Rent',
+            isDefault: false,
+          ),
+        );
+        batch.insert(
+          oldDb.syncCursors,
+          const v3.SyncCursorsData(workspaceId: 'w1', since: 40),
+        );
+      },
+      validateItems: (newDb) async {
+        final category = await newDb.select(newDb.categories).getSingle();
+        expect((category.id, category.name, category.isDefault, category.color), ('c1', 'Food', true, null));
+        final entryCategory = await newDb.select(newDb.entryCategories).getSingle();
+        expect((entryCategory.id, entryCategory.categoryName, entryCategory.color), ('e1', 'Rent', null));
+        expect(await newDb.select(newDb.syncCursors).get(), isEmpty);
       },
     );
   });

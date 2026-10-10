@@ -74,6 +74,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => CashbookPage(bookId: state.pathParameters['id']!),
         routes: [
           GoRoute(path: 'report', builder: (_, state) => CashbookReportPage(bookId: state.pathParameters['id']!)),
+          GoRoute(
+            path: 'categories',
+            builder: (_, state) => CashbookCategoriesPage(bookId: state.pathParameters['id']!),
+          ),
         ],
       ),
     ],

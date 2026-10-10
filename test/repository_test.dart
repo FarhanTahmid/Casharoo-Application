@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:spendroo/core/db/database.dart';
 import 'package:spendroo/core/db/local_store.dart';
+import 'package:spendroo/core/design/category_color.dart';
 import 'package:spendroo/features/cashbook/cashbook_repository.dart';
 import 'package:spendroo/features/personal/ledger_repository.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'test_support.dart';
@@ -90,6 +92,34 @@ void main() {
       expect(rows.firstWhere((r) => r.name == 'Food').cashOutMinor, 500);
       expect(rows.firstWhere((r) => r.name == null).cashInMinor, 900);
     });
+
+    test('a category colour reaches its entries and the breakdown, and only the change is queued', () async {
+      final bookId = await repo.createCashbook('ws1', 'Till', 'BDT');
+      final book = (await repo.watchCashbook(bookId).first)!.book;
+      final food = (await repo.watchCategories(bookId).first).firstWhere((c) => c.categoryName == 'Food');
+      await repo.addEntry(book, entryType: 'cash_out', amountMinor: 300, entryDate: '2026-10-01', categoryId: food.id);
+      final rentId = await repo.addCategory(book, 'Rent', color: '#3B9EE5');
+
+      await repo.updateCategory(food, name: 'Food', color: '#E8705F');
+      expect((await repo.watchEntries(bookId).first).single.categoryColor, '#E8705F');
+      final row = (await repo.watchBreakdown(bookId, byCategory: true).first).single;
+      expect((row.id, row.color), (food.id, '#E8705F'));
+      expect((await repo.watchBreakdown(bookId, byCategory: false).first).single.color, isNull);
+
+      final queued = (await outbox()).map((o) => '${o.rowId} ${o.data}').toList();
+      expect(queued.last, '${food.id} {"color":"#E8705F"}');
+      expect(queued[queued.length - 2], contains('$rentId {"cashbook_id":"$bookId","category_name":"Rent"'));
+      expect(queued[queued.length - 2], contains('"color":"#3B9EE5"'));
+    });
+  });
+
+  test('category colours: stored as #RRGGBB, and the same automatic one for the same id', () {
+    expect(toHexColor(parseHexColor('#e8705f')!), '#E8705F');
+    expect(parseHexColor('red'), isNull);
+    expect(categoryFill('#E8705F', 'a'), const Color(0xFFE8705F));
+    expect(categoryFill(null, 'a'), categoryFill('nonsense', 'a'));
+    expect(categoryPalette, contains(categoryFill(null, '0199c2f4-0000-7000-8000-000000000001')));
+    expect(categoryPalette, isNot(contains(categoryFill(null, null)))); // uncategorised has its own grey
   });
 
   group('cashbook delete', () {
@@ -150,13 +180,35 @@ void main() {
 
       final month = await repo.watchMonth('ws1', DateTime(2026, 10, 15), 'BDT').first;
       expect((month.incomeMinor, month.expenseMinor), (80000, 5700)); // transfers are neither
-      expect(month.byCategory.map((e) => (e.key, e.value)).toList(), [('Food', 5000), (null, 700)]);
+      expect(month.byCategory.map((e) => (e.name, e.amountMinor)).toList(), [('Food', 5000), (null, 700)]);
 
       await repo.setBudget('ws1', foodId, 4500, 'BDT');
       await repo.setBudget('ws1', foodId, 4800, 'BDT'); // same category: updates, does not duplicate
       final budgets = await repo.watchBudgets('ws1', DateTime(2026, 10, 15)).first;
       expect(budgets.single.budget.amountMinor, 4800);
       expect((budgets.single.spentMinor, budgets.single.isOver), (5000, true));
+    });
+
+    test('a category colour follows the category everywhere, and clearing it is queued', () async {
+      final foodId = await repo.addCategory('ws1', 'Food', 'expense', color: '#E8705F');
+      await repo.addTransaction(cash, kind: 'expense', amountMinor: 4000, occurredOn: '2026-10-05', categoryId: foodId);
+      await repo.setBudget('ws1', foodId, 4500, 'BDT');
+      final month = DateTime(2026, 10, 15);
+
+      final slice = (await repo.watchMonth('ws1', month, 'BDT').first).byCategory.single;
+      expect((slice.categoryId, slice.color), (foodId, '#E8705F'));
+      final top = (await repo.watchTopCategories('ws1', month, 'BDT').first).single;
+      expect((top.categoryId, top.categoryColor), (foodId, '#E8705F'));
+      expect((await repo.watchBudgets('ws1', month).first).single.categoryColor, '#E8705F');
+      expect((await repo.watchTransactions('ws1').first).single.categoryColor, '#E8705F');
+
+      final food = (await repo.watchCategories('ws1').first).single;
+      final before = (await outbox()).length;
+      await repo.updateCategory(food, name: 'Food', color: '#E8705F'); // nothing changed
+      expect((await outbox()).length, before);
+      await repo.updateCategory(food, name: 'Food', color: null);
+      expect((await outbox()).last.data, '{"color":null}');
+      expect((await repo.watchCategories('ws1').first).single.color, isNull);
     });
 
     test('a one-month override replaces the recurring budget for that month only', () async {
@@ -211,7 +263,7 @@ void main() {
       final food = (await repo.watchCategories('ws1').first).single;
       expect(await repo.transactionCount(foodId), 1);
 
-      await repo.renameCategory(food, 'Groceries');
+      await repo.updateCategory(food, name: 'Groceries', color: food.color);
       expect((await repo.watchCategories('ws1').first).single.name, 'Groceries');
 
       await repo.deleteCategory(food);

@@ -18,19 +18,23 @@ class AccountBalance {
 }
 
 class TransactionView {
-  TransactionView(this.transaction, this.accountName, this.categoryName);
+  TransactionView(this.transaction, this.accountName, this.categoryName, {this.categoryColor});
 
   final Transaction transaction;
   final String accountName;
   final String? categoryName;
+
+  /// What the user chose for the category, if anything (see categoryFill).
+  final String? categoryColor;
 }
 
 class BudgetProgress {
-  BudgetProgress(this.budget, this.categoryName, this.spentMinor, {this.recurring});
+  BudgetProgress(this.budget, this.categoryName, this.spentMinor, {this.recurring, this.categoryColor});
 
   /// The limit in force for the month: its override if there is one, else the recurring budget.
   final Budget budget;
   final String categoryName;
+  final String? categoryColor;
 
   /// Spent in the category during the month, as a positive number.
   final int spentMinor;
@@ -53,16 +57,31 @@ class MonthTotals {
 
 /// Spending in a category this month against the month before.
 class CategoryChange {
-  CategoryChange(this.categoryName, this.thisMonthMinor, this.lastMonthMinor);
+  CategoryChange(this.categoryId, this.categoryName, this.categoryColor, this.thisMonthMinor, this.lastMonthMinor);
 
   /// Null: uncategorised.
+  final String? categoryId;
   final String? categoryName;
+  final String? categoryColor;
   final int thisMonthMinor;
   final int lastMonthMinor;
 
   /// Percentage change, or null when there was nothing to compare with.
   int? get changePercent =>
       lastMonthMinor == 0 ? null : ((thisMonthMinor - lastMonthMinor) * 100 / lastMonthMinor).round();
+}
+
+/// What one category took of a month's spending.
+class CategorySpend {
+  CategorySpend(this.categoryId, this.name, this.color, this.amountMinor);
+
+  /// Null: uncategorised.
+  final String? categoryId;
+  final String? name;
+  final String? color;
+
+  /// Positive number.
+  final int amountMinor;
 }
 
 class MonthSummary {
@@ -73,8 +92,8 @@ class MonthSummary {
   /// Positive number.
   final int expenseMinor;
 
-  /// Expense per category name (null key: uncategorised), largest first.
-  final List<MapEntry<String?, int>> byCategory;
+  /// Expense per category, largest first.
+  final List<CategorySpend> byCategory;
 }
 
 String isoDate(DateTime date) =>
@@ -121,7 +140,7 @@ class LedgerRepository {
         day != null ? (day, day) : (month != null ? monthRange(month) : ('0000-01-01', '9999-12-31'));
     return db
         .customSelect(
-          'SELECT t.*, a.name AS a_name, c.name AS c_name FROM transactions t '
+          'SELECT t.*, a.name AS a_name, c.name AS c_name, c.color AS c_color FROM transactions t '
           'JOIN accounts a ON a.id = t.account_id LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL '
           'WHERE t.workspace_id = ? AND t.deleted_at IS NULL AND t.occurred_on BETWEEN ? AND ? '
           'ORDER BY t.occurred_on DESC, t.created_at DESC',
@@ -135,6 +154,7 @@ class LedgerRepository {
                   db.transactions.map(row.data),
                   row.read<String>('a_name'),
                   row.readNullable<String>('c_name'),
+                  categoryColor: row.readNullable<String>('c_color'),
                 ),
             ]);
   }
@@ -145,7 +165,7 @@ class LedgerRepository {
     final (first, last) = monthRange(month);
     return db
         .customSelect(
-          'SELECT b.*, c.name AS c_name, COALESCE((SELECT -SUM(t.amount_minor) FROM transactions t '
+          'SELECT b.*, c.name AS c_name, c.color AS c_color, COALESCE((SELECT -SUM(t.amount_minor) FROM transactions t '
           "WHERE t.category_id = b.category_id AND t.kind = 'expense' AND t.deleted_at IS NULL "
           'AND t.occurred_on BETWEEN ? AND ?), 0) AS spent FROM budgets b '
           'JOIN categories c ON c.id = b.category_id AND c.deleted_at IS NULL '
@@ -162,12 +182,12 @@ class LedgerRepository {
         .map((rows) {
       final recurring = <String, Budget>{};
       final overrides = <String, (Budget, String, int)>{};
-      final order = <String, (String, int)>{};
+      final order = <String, (String, int, String?)>{};
       for (final row in rows) {
         final budget = db.budgets.map(row.data);
         final name = row.read<String>('c_name');
         final spent = row.read<int>('spent');
-        order[budget.categoryId] = (name, spent);
+        order[budget.categoryId] = (name, spent, row.readNullable<String>('c_color'));
         if (budget.month == null) {
           recurring[budget.categoryId] = budget;
         } else {
@@ -175,11 +195,11 @@ class LedgerRepository {
         }
       }
       return [
-        for (final MapEntry(key: categoryId, value: (name, spent)) in order.entries)
+        for (final MapEntry(key: categoryId, value: (name, spent, color)) in order.entries)
           if (overrides[categoryId] case (final override, _, _))
-            BudgetProgress(override, name, spent, recurring: recurring[categoryId])
+            BudgetProgress(override, name, spent, recurring: recurring[categoryId], categoryColor: color)
           else
-            BudgetProgress(recurring[categoryId]!, name, spent),
+            BudgetProgress(recurring[categoryId]!, name, spent, categoryColor: color),
       ];
     });
   }
@@ -253,12 +273,12 @@ class LedgerRepository {
     final (previousFirst, _) = monthRange(DateTime(month.year, month.month - 1, 1));
     return db
         .customSelect(
-          'SELECT c.name AS c_name, '
+          'SELECT c.id AS c_id, c.name AS c_name, c.color AS c_color, '
           'SUM(CASE WHEN t.occurred_on >= ? THEN -t.amount_minor ELSE 0 END) AS this_month, '
           'SUM(CASE WHEN t.occurred_on < ? THEN -t.amount_minor ELSE 0 END) AS last_month '
           'FROM transactions t LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL '
           "WHERE t.workspace_id = ? AND t.deleted_at IS NULL AND t.kind = 'expense' AND t.currency = ? "
-          'AND t.occurred_on BETWEEN ? AND ? GROUP BY c.name HAVING this_month > 0 '
+          'AND t.occurred_on BETWEEN ? AND ? GROUP BY c.id HAVING this_month > 0 '
           'ORDER BY this_month DESC LIMIT ?',
           variables: [
             Variable<String>(first),
@@ -274,7 +294,13 @@ class LedgerRepository {
         .watch()
         .map((rows) => [
               for (final row in rows)
-                CategoryChange(row.readNullable<String>('c_name'), row.read<int>('this_month'), row.read<int>('last_month')),
+                CategoryChange(
+                  row.readNullable<String>('c_id'),
+                  row.readNullable<String>('c_name'),
+                  row.readNullable<String>('c_color'),
+                  row.read<int>('this_month'),
+                  row.read<int>('last_month'),
+                ),
             ]);
   }
 
@@ -283,10 +309,11 @@ class LedgerRepository {
     final (first, last) = monthRange(month);
     return db
         .customSelect(
-          'SELECT t.kind AS kind, c.name AS c_name, SUM(t.amount_minor) AS total FROM transactions t '
+          'SELECT t.kind AS kind, c.id AS c_id, c.name AS c_name, c.color AS c_color, SUM(t.amount_minor) AS total '
+          'FROM transactions t '
           'LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL '
           "WHERE t.workspace_id = ? AND t.deleted_at IS NULL AND t.kind != 'transfer' AND t.currency = ? "
-          'AND t.occurred_on BETWEEN ? AND ? GROUP BY t.kind, c.name',
+          'AND t.occurred_on BETWEEN ? AND ? GROUP BY t.kind, c.id',
           variables: [
             Variable<String>(workspaceId),
             Variable<String>(currency),
@@ -298,19 +325,23 @@ class LedgerRepository {
         .watch()
         .map((rows) {
       var income = 0, expense = 0;
-      final byCategory = <String?, int>{};
+      final byCategory = <CategorySpend>[];
       for (final row in rows) {
         final total = row.read<int>('total');
         if (row.read<String>('kind') == 'income') {
           income += total;
         } else {
           expense -= total;
-          final name = row.readNullable<String>('c_name');
-          byCategory[name] = (byCategory[name] ?? 0) - total;
+          byCategory.add(CategorySpend(
+            row.readNullable<String>('c_id'),
+            row.readNullable<String>('c_name'),
+            row.readNullable<String>('c_color'),
+            -total,
+          ));
         }
       }
-      final sorted = byCategory.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      return MonthSummary(income, expense, sorted);
+      byCategory.sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
+      return MonthSummary(income, expense, byCategory);
     });
   }
 
@@ -348,15 +379,21 @@ class LedgerRepository {
     });
   }
 
-  Future<String> addCategory(String workspaceId, String name, String kind) async {
+  /// [color] is '#RRGGBB'; without one the app picks the colour (categoryFill).
+  Future<String> addCategory(String workspaceId, String name, String kind, {String? color}) async {
     await plan?.roomFor(F.customCategories, workspaceId);
-    return store.create('categories', workspaceId, {'name': name, 'kind': kind});
+    return store.create('categories', workspaceId, {'name': name, 'kind': kind, if (color != null) 'color': color});
   }
 
-  Future<void> renameCategory(Category category, String name) async {
-    if (name == category.name) return;
+  /// Sends only what differs from [category]. A null [color] hands the choice back to the app.
+  Future<void> updateCategory(Category category, {required String name, required String? color}) async {
+    final changes = {
+      if (name != category.name) 'name': name,
+      if (color != category.color) 'color': color,
+    };
+    if (changes.isEmpty) return;
     plan?.writable(F.customCategories, category.id);
-    await store.update('categories', category.id, {'name': name});
+    await store.update('categories', category.id, changes);
   }
 
   /// Transactions filed under the category, for the warning before deleting it.

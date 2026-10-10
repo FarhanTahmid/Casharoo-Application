@@ -160,7 +160,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
           final account = await GoogleSignIn.instance.authenticate();
           final idToken = account.authentication.idToken;
           if (idToken == null) return 'Google did not return an ID token.';
-          return ref
+          return await ref
               .read(authControllerProvider.notifier)
               .logInWithGoogle(idToken: idToken, clientId: AppConfig.googleServerClientId);
         } on GoogleSignInException catch (error) {

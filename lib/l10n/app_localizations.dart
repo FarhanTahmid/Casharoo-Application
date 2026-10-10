@@ -1034,11 +1034,41 @@ abstract class AppLocalizations {
   /// **'No categories yet.'**
   String get noCategories;
 
-  /// No description provided for @renameCategory.
+  /// No description provided for @editCategory.
   ///
   /// In en, this message translates to:
-  /// **'Rename category'**
-  String get renameCategory;
+  /// **'Edit category'**
+  String get editCategory;
+
+  /// No description provided for @colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour'**
+  String get colour;
+
+  /// No description provided for @automaticColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get automaticColour;
+
+  /// No description provided for @customColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom colour'**
+  String get customColour;
+
+  /// No description provided for @colourHue.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get colourHue;
+
+  /// No description provided for @colourShade.
+  ///
+  /// In en, this message translates to:
+  /// **'Shade'**
+  String get colourShade;
 
   /// No description provided for @deleteCategoryConfirm.
   ///

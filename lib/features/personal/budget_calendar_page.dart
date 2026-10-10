@@ -309,6 +309,8 @@ class _BudgetCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
+                    ColorDot(categoryFill(item.categoryColor, item.budget.categoryId)),
+                    const SizedBox(width: 10),
                     Expanded(child: Text(item.categoryName, style: text.titleMedium, overflow: TextOverflow.ellipsis)),
                     if (item.isOverride) _Tag(l10n.thisMonthOnly, context.colors.muted),
                     if (item.isOver) _Tag(l10n.overBudget, context.colors.moneyOut),
@@ -373,7 +375,7 @@ Future<void> showBudgetForm(BuildContext context, WidgetRef ref, Workspace works
   final amount = TextEditingController(
     text: existing == null ? '' : Money.toInput(existing.budget.amountMinor, currency),
   );
-  final options = [for (final c in categories) SelectOption(c.id, c.name)];
+  final options = [for (final c in categories) SelectOption(c.id, c.name, color: categoryFill(c.color, c.id))];
   var categoryId = existing?.budget.categoryId ?? categories.firstOrNull?.id;
   var thisMonthOnly = existing?.isOverride ?? false;
   var refused = 0;
@@ -400,7 +402,7 @@ Future<void> showBudgetForm(BuildContext context, WidgetRef ref, Workspace works
                 onCreate: (name) async {
                   String? id;
                   await guarded(context, () async => id = await repo.addCategory(workspace.id, name, 'expense'));
-                  if (id != null) options.add(SelectOption(id!, name));
+                  if (id != null) options.add(SelectOption(id!, name, color: categoryFill(null, id)));
                   return id;
                 },
                 onChanged: (value) => setState(() => categoryId = value),

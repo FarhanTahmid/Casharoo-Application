@@ -13,19 +13,6 @@ import '../plan/plan_text.dart';
 import '../plan/upgrade_sheet.dart';
 import 'ledger_repository.dart';
 
-/// Slice colours for the spending chart. The first is the theme's primary, so
-/// it stays readable in the dark theme.
-List<Color> _chartColors(BuildContext context) => [
-      Theme.of(context).colorScheme.primary,
-      AppTheme.accentColor,
-      AppTheme.secondaryColor,
-      const Color(0xFFE8705F),
-      const Color(0xFF3B9EE5),
-      const Color(0xFF7A5AF8),
-      const Color(0xFF1FA6A0),
-      const Color(0xFF8A97AB),
-    ];
-
 String accountKindLabel(BuildContext context, String kind) => switch (kind) {
       'bank' => context.l10n.kindBank,
       'savings' => context.l10n.kindSavings,
@@ -94,7 +81,6 @@ class OverviewPage extends ConsumerWidget {
     final selectedMonth = ref.watch(selectedMonthProvider);
     final now = DateTime.now();
     final isCurrentMonth = now.year == selectedMonth.year && now.month == selectedMonth.month;
-    final chartColors = _chartColors(context);
 
     return PassbookBody(
       header: Column(
@@ -169,10 +155,10 @@ class OverviewPage extends ConsumerWidget {
                               centerSpaceRadius: 62,
                               startDegreeOffset: -90,
                               sections: [
-                                for (final (index, slice) in month.byCategory.indexed)
+                                for (final slice in month.byCategory)
                                   PieChartSectionData(
-                                    value: slice.value.toDouble(),
-                                    color: chartColors[index % chartColors.length],
+                                    value: slice.amountMinor.toDouble(),
+                                    color: categoryFill(slice.color, slice.categoryId),
                                     showTitle: false,
                                     radius: 26,
                                   ),
@@ -200,31 +186,24 @@ class OverviewPage extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    for (final (index, slice) in month.byCategory.indexed)
+                    for (final slice in month.byCategory)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(
                           children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: chartColors[index % chartColors.length],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
+                            ColorDot(categoryFill(slice.color, slice.categoryId)),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(slice.key ?? l10n.uncategorised, overflow: TextOverflow.ellipsis)),
+                            Expanded(child: Text(slice.name ?? l10n.uncategorised, overflow: TextOverflow.ellipsis)),
                             if (month.expenseMinor > 0)
                               Padding(
                                 padding: const EdgeInsets.only(right: 12),
                                 child: Text(
-                                  _localDigits(context, '${(slice.value * 100 / month.expenseMinor).round()}%'),
+                                  _localDigits(context, '${(slice.amountMinor * 100 / month.expenseMinor).round()}%'),
                                   style: text.bodySmall,
                                 ),
                               ),
                             Text(
-                              context.money(slice.value, currency),
+                              context.money(slice.amountMinor, currency),
                               style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontFeatures: tabularFigures),
                             ),
                           ],
@@ -243,6 +222,8 @@ class OverviewPage extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Row(
                       children: [
+                        ColorDot(categoryFill(item.categoryColor, item.categoryId)),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +419,10 @@ class TransactionTile extends StatelessWidget {
     final label = isTransfer ? l10n.transfer : (view.categoryName ?? l10n.uncategorised);
     return MoneyRow(
       icon: isTransfer ? Icons.swap_horiz_rounded : (isIn ? Icons.south_west_rounded : Icons.north_east_rounded),
-      tint: isTransfer ? null : context.amountColor(isIn),
+      // The badge wears the category's colour; the arrow and the amount still say which way the money went
+      tint: isTransfer
+          ? null
+          : (t.categoryId == null ? context.amountColor(isIn) : context.categoryTint(view.categoryColor, t.categoryId)),
       title: t.note.isNotEmpty ? t.note : label,
       detail: [
         if (showDate) formatDate(context, t.occurredOn),
@@ -776,7 +760,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                 icon: Icons.sell_outlined,
                 value: _categoryId,
                 noneLabel: l10n.none,
-                options: [for (final c in categories) SelectOption(c.id, c.name)],
+                options: [for (final c in categories) SelectOption(c.id, c.name, color: categoryFill(c.color, c.id))],
                 createLabel: l10n.newCategory,
                 onCreate: (name) async {
                   String? id;

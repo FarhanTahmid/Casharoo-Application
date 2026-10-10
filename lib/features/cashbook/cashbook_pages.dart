@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -238,7 +239,9 @@ class CashbookPage extends ConsumerWidget {
             if (canEdit)
               PopupMenuButton<String>(
                 onSelected: (action) async {
-                  if (action == 'rename') {
+                  if (action == 'categories') {
+                    context.push('/cashbook/$bookId/categories');
+                  } else if (action == 'rename') {
                     final name =
                         await promptText(context, title: l10n.rename, label: l10n.cashbookName, initial: book.bookName);
                     if (name != null && context.mounted) {
@@ -253,6 +256,7 @@ class CashbookPage extends ConsumerWidget {
                 },
                 itemBuilder: (context) => [
                   PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                  if (permission == 'admin') PopupMenuItem(value: 'categories', child: Text(l10n.categories)),
                   if (workspace?.role == 'owner') PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
                 ],
               ),
@@ -380,7 +384,9 @@ class _EntryTile extends StatelessWidget {
         .join(' · ');
     return MoneyRow(
       icon: view.isCashIn ? Icons.south_west_rounded : Icons.north_east_rounded,
-      tint: context.amountColor(view.isCashIn),
+      tint: entry.categoryId == null
+          ? context.amountColor(view.isCashIn)
+          : context.categoryTint(view.categoryColor, entry.categoryId),
       title: (entry.title?.isNotEmpty ?? false) ? entry.title! : (view.isCashIn ? context.l10n.cashIn : context.l10n.cashOut),
       detail: details,
       amount: context.money(entry.amountMinor, entry.currency),
@@ -535,7 +541,9 @@ class _EntryFormPageState extends ConsumerState<EntryFormPage> {
               icon: Icons.sell_outlined,
               value: _categoryId,
               noneLabel: l10n.none,
-              options: [for (final c in categories) SelectOption(c.id, c.categoryName)],
+              options: [
+                for (final c in categories) SelectOption(c.id, c.categoryName, color: categoryFill(c.color, c.id)),
+              ],
               createLabel: l10n.newCategory,
               onCreate: (name) => repo.addCategory(widget.book, name),
               onChanged: (value) => setState(() => _categoryId = value),
@@ -605,7 +613,51 @@ class CashbookReportPage extends ConsumerWidget {
                     ),
                   ),
                 );
+            final spent = byCategory ? rows.where((r) => r.cashOutMinor > 0).toList() : const <BreakdownRow>[];
             return SectionCard(title: title, children: [
+              // Where the money went, each category in its own colour
+              if (spent.isNotEmpty)
+                SizedBox(
+                  height: 190,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      PieChart(
+                        PieChartData(
+                          sectionsSpace: 3,
+                          centerSpaceRadius: 62,
+                          startDegreeOffset: -90,
+                          sections: [
+                            for (final row in spent)
+                              PieChartSectionData(
+                                value: row.cashOutMinor.toDouble(),
+                                color: categoryFill(row.color, row.id),
+                                showTitle: false,
+                                radius: 26,
+                              ),
+                          ],
+                        ),
+                        duration: context.motion(AppMotion.emphasised),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(l10n.totalOut, style: text.bodySmall),
+                          SizedBox(
+                            width: 108,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                Money.compact(summary.cashOutMinor, currency, locale: context.languageCode),
+                                style: text.headlineSmall?.copyWith(fontFeatures: tabularFigures),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               for (final row in rows)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -615,6 +667,11 @@ class CashbookReportPage extends ConsumerWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (byCategory)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, right: 10),
+                              child: ColorDot(categoryFill(row.color, row.id)),
+                            ),
                           Expanded(child: Text(row.name ?? l10n.uncategorised, overflow: TextOverflow.ellipsis)),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -659,6 +716,75 @@ class CashbookReportPage extends ConsumerWidget {
           section(l10n.byCategory, true),
           section(l10n.byPaymentMethod, false),
         ],
+      ),
+    );
+  }
+}
+
+/// The categories of one cashbook: add one, or change a name or colour.
+/// For the people who may administer the book.
+class CashbookCategoriesPage extends ConsumerWidget {
+  const CashbookCategoriesPage({super.key, required this.bookId});
+
+  final String bookId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final book = ref.watch(cashbookProvider(bookId)).value?.book;
+    final repo = ref.read(cashbookRepositoryProvider);
+    if (book == null) return Scaffold(appBar: AppBar(title: Text(l10n.categories)));
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.categories)),
+      body: AsyncView(
+        value: ref.watch(entryCategoriesProvider(bookId)),
+        builder: (categories) => categories.isEmpty
+            ? EmptyState(icon: Icons.sell_outlined, message: l10n.noCategories)
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(AppSpace.page, AppSpace.lg, AppSpace.page, 96),
+                children: [
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (final (index, category) in categories.indexed) ...[
+                          if (index > 0) const Divider(indent: 68),
+                          ListTile(
+                            leading: IconBadge(
+                              Icons.sell_outlined,
+                              color: context.categoryTint(category.color, category.id),
+                              size: 36,
+                            ),
+                            title: Text(category.categoryName),
+                            trailing: Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+                            onTap: () async {
+                              final edited = await showCategorySheet(context,
+                                  title: l10n.editCategory,
+                                  initialName: category.categoryName,
+                                  initialColor: category.color);
+                              if (edited != null && context.mounted) {
+                                await guarded(context,
+                                    () => repo.updateCategory(category, name: edited.name, color: edited.color));
+                              }
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.add_rounded),
+        label: Text(l10n.newCategory),
+        onPressed: () async {
+          final edited = await showCategorySheet(context, title: l10n.newCategory);
+          if (edited == null || !context.mounted) return;
+          await repo.addCategory(book, edited.name, color: edited.color);
+          if (context.mounted) showEventBurst(context, AppEvent.saved);
+        },
       ),
     );
   }
