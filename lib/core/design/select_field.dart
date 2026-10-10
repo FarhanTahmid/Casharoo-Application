@@ -123,8 +123,9 @@ class SelectField<T> extends StatelessWidget {
   /// When set, the list starts with this "nothing chosen" row.
   final String? noneLabel;
 
-  /// Makes a new option from a typed name and returns its value.
-  final Future<T> Function(String name)? onCreate;
+  /// Makes a new option from a typed name and returns its value, or null
+  /// when it could not be made; the list then stays open.
+  final Future<T?> Function(String name)? onCreate;
   final String? createLabel;
   final IconData? icon;
 
@@ -161,7 +162,7 @@ Future<({T? value})?> showSelectSheet<T>(
   required List<SelectOption<T>> options,
   T? value,
   String? noneLabel,
-  Future<T> Function(String name)? onCreate,
+  Future<T?> Function(String name)? onCreate,
   String? createLabel,
 }) async {
   final picked = await showAppSheet<_Picked<T>>(
@@ -185,7 +186,7 @@ class _SelectSheet<T> extends StatefulWidget {
   final List<SelectOption<T>> options;
   final T? value;
   final String? noneLabel;
-  final Future<T> Function(String name)? onCreate;
+  final Future<T?> Function(String name)? onCreate;
   final String? createLabel;
 
   @override
@@ -199,7 +200,9 @@ class _SelectSheetState<T> extends State<_SelectSheet<T>> {
   Future<void> _create(String name) async {
     setState(() => _creating = true);
     final created = await widget.onCreate!(name);
-    if (mounted) Navigator.pop(context, _Picked<T>(created));
+    if (!mounted) return;
+    if (created == null) return setState(() => _creating = false);
+    Navigator.pop(context, _Picked<T>(created));
   }
 
   @override

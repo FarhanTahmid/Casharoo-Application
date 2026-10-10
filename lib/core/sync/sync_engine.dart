@@ -26,11 +26,17 @@ class SyncException implements Exception {
 /// the server now holds it, and a refused change is rolled back locally and
 /// recorded in sync_failures.
 class SyncEngine {
-  SyncEngine(this.db, this.api, this.store);
+  SyncEngine(this.db, this.api, this.store, {this.onBillingStamp, this.onPlanLimit});
 
   final AppDatabase db;
   final ApiClient api;
   final LocalStore store;
+
+  /// Called with the server's marker for "plans or this user's plan changed".
+  final void Function(String stamp)? onBillingStamp;
+
+  /// Called with the `meta` of a change the server refused because of the plan.
+  final void Function(Map<String, dynamic> meta)? onPlanLimit;
 
   static const _pushBatchSize = 100;
 
@@ -106,6 +112,7 @@ class SyncEngine {
         for (final result in (response.json['results'] as List).cast<Map<String, dynamic>>()) result['id']: result,
       };
 
+      final planLimits = <Map<String, dynamic>>[];
       await db.transaction(() async {
         for (final item in batch) {
           final result = results[item.mutationId];
@@ -113,8 +120,12 @@ class SyncEngine {
           await (db.delete(db.outbox)..where((o) => o.seq.equals(item.seq))).go();
 
           final rejected = result['status'] != 'applied';
-          if (rejected) {
-            final error = (result['error'] as Map?) ?? const {};
+          final error = (result['error'] as Map?) ?? const {};
+          if (rejected && error['code'] == 'plan_limit') {
+            // Not a fault to list under "not synced": the change is undone
+            // below and the user is shown what their plan allows
+            planLimits.add(((error['meta'] as Map?) ?? const {}).cast<String, dynamic>());
+          } else if (rejected) {
             await db.into(db.syncFailures).insert(SyncFailuresCompanion.insert(
                   tableName_: item.tableName_,
                   rowId: item.rowId,
@@ -134,6 +145,9 @@ class SyncEngine {
           }
         }
       });
+      for (final meta in planLimits) {
+        onPlanLimit?.call(meta);
+      }
     }
   }
 
@@ -149,6 +163,8 @@ class SyncEngine {
       final accessible = (body['accessible_cashbook_ids'] as List).cast<String>().toSet();
       final nextSince = body['next_since'] as int;
       final hasMore = body['has_more'] as bool;
+      final stamp = body['billing_stamp'];
+      if (stamp is String) onBillingStamp?.call(stamp);
 
       var restart = false;
       await db.transaction(() async {

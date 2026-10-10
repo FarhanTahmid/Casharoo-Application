@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -34,6 +35,38 @@ class FakeServer {
   /// Default currency of the personal workspace; a PATCH changes it.
   var personalCurrency = 'BDT';
 
+  /// Bodies sent to /auth/login and /auth/signup.
+  final logins = <Map<String, dynamic>>[];
+  final signups = <Map<String, dynamic>>[];
+
+  // The profile behind /api/v1/me/
+  var username = 'alice';
+  var hasPassword = true;
+  String? avatarUrl;
+  var avatarVersion = 0;
+  final takenUsernames = {'bob'};
+  final usernameChecks = <String>[];
+  final usernameChanges = <Map<String, dynamic>>[];
+  final passwordChanges = <Map<String, dynamic>>[];
+
+  /// Content-Type of each avatar upload.
+  final avatarUploads = <String>[];
+  var avatarFetches = 0;
+
+  Map<String, dynamic> get profile => {
+        'id': 'user-1',
+        'email': 'alice@example.com',
+        'username': username,
+        'first_name': '',
+        'last_name': '',
+        'bio': '',
+        'phone': '',
+        'avatar_url': avatarUrl,
+        'has_password': hasPassword,
+        'onboarded_at': onboardedAt,
+        'primary_mode': primaryMode ?? '',
+      };
+
   Map<String, dynamic> row(String id, Map<String, dynamic> fields, {String workspace = personalId}) => {
         'id': id,
         'workspace_id': workspace,
@@ -50,9 +83,15 @@ class FakeServer {
     http.Response json(Object body, [int status = 200]) =>
         http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json'});
 
+    if (path.endsWith('/auth/signup')) {
+      signups.add((jsonDecode(request.body) as Map).cast<String, dynamic>());
+      return json({'status': 401, 'data': {'flows': [{'id': 'verify_email', 'is_pending': true}]}, 'meta': {'session_token': 'token-0'}}, 401);
+    }
     if (path.endsWith('/auth/login')) {
-      final body = jsonDecode(request.body) as Map;
-      if (body['password'] != 'correct-horse') {
+      final body = (jsonDecode(request.body) as Map).cast<String, dynamic>();
+      logins.add(body);
+      final who = body['email'] ?? body['username'];
+      if (body['password'] != 'correct-horse' || (who != 'alice@example.com' && who != username)) {
         return json({'status': 400, 'errors': [{'message': 'The email address and/or password you specified are not correct.'}]}, 400);
       }
       loggedIn = true;
@@ -62,10 +101,56 @@ class FakeServer {
     if (path == '/api/v1/me/') {
       if (request.method == 'PATCH') {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
-        onboardedAt = body['onboarded_at'] as String?;
-        primaryMode = body['primary_mode'] as String?;
+        if (body.containsKey('onboarded_at')) onboardedAt = body['onboarded_at'] as String?;
+        if (body.containsKey('primary_mode')) primaryMode = body['primary_mode'] as String?;
       }
-      return json({'email': 'alice@example.com', 'onboarded_at': onboardedAt, 'primary_mode': primaryMode ?? ''});
+      return json(profile);
+    }
+    if (path == '/api/v1/me/username/check/') {
+      final wanted = request.url.queryParameters['username']!;
+      usernameChecks.add(wanted);
+      if (wanted.contains('@') || wanted.contains(' ')) {
+        return json({'available': false, 'current': false, 'reason': 'invalid', 'message': 'no', 'suggestions': []});
+      }
+      if (takenUsernames.contains(wanted.toLowerCase())) {
+        return json({'available': false, 'current': false, 'reason': 'taken', 'message': 'taken', 'suggestions': ['${wanted}1234', '${wanted}5678']});
+      }
+      return json({'available': true, 'current': wanted.toLowerCase() == username.toLowerCase(), 'reason': null, 'message': null, 'suggestions': []});
+    }
+    if (path == '/api/v1/me/username/') {
+      final body = (jsonDecode(request.body) as Map).cast<String, dynamic>();
+      usernameChanges.add(body);
+      if (hasPassword && body['password'] != 'correct-horse') {
+        return json({'password': ['Incorrect password.']}, 400);
+      }
+      if (takenUsernames.contains((body['username'] as String).toLowerCase())) {
+        return json({'username': ['This username is already taken.']}, 400);
+      }
+      username = body['username'] as String;
+      return json(profile);
+    }
+    if (path == '/api/v1/me/avatar/') {
+      switch (request.method) {
+        case 'POST':
+          avatarUploads.add(request.headers['content-type'] ?? '');
+          avatarUrl = '/api/v1/me/avatar/?v=${++avatarVersion}';
+          return json(profile);
+        case 'DELETE':
+          avatarUrl = null;
+          return http.Response('', 204);
+        default:
+          avatarFetches++;
+          return avatarUrl == null ? json({'detail': 'Not found.'}, 404) : http.Response.bytes(onePixelPng, 200);
+      }
+    }
+    if (path == '/_allauth/app/v1/account/password/change') {
+      final body = (jsonDecode(request.body) as Map).cast<String, dynamic>();
+      passwordChanges.add(body);
+      if (hasPassword && body['current_password'] != 'correct-horse') {
+        return json({'status': 400, 'errors': [{'message': 'Please type your current password.', 'param': 'current_password'}]}, 400);
+      }
+      hasPassword = true;
+      return json({'status': 200, 'meta': {'is_authenticated': true, 'session_token': 'token-1'}});
     }
     const shop = {'id': shopId, 'name': 'Demo shop', 'kind': 'business', 'default_currency': 'BDT', 'is_demo': true, 'role': 'owner'};
     if (path == '/api/v1/workspaces/demo/') {
@@ -140,9 +225,14 @@ class FakeServer {
   }
 }
 
+/// A 1×1 PNG, for avatars.
+final onePixelPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+);
+
 /// The app wired to [server], with helpers to let real async work finish under the fake clock.
 class Harness {
-  Harness(this.tester, this.server) {
+  Harness(this.tester, this.server, {List<Override> overrides = const []}) {
     useHostSqlite();
     db = AppDatabase(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true));
     container = ProviderContainer(overrides: [
@@ -153,6 +243,7 @@ class Harness {
             tokenStore: ref.watch(tokenStoreProvider),
             httpClient: MockClient(server.handle),
           )),
+      ...overrides,
     ]);
   }
 

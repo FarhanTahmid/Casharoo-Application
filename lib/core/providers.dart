@@ -9,6 +9,8 @@ import 'auth/auth_repository.dart';
 import 'config.dart';
 import 'db/database.dart';
 import 'db/local_store.dart';
+import 'entitlements/entitlements.dart';
+import 'entitlements/entitlements_controller.dart';
 import 'sync/sync_engine.dart';
 
 // ---------------------------------------------------------------- plumbing
@@ -54,7 +56,17 @@ final localStoreProvider = Provider<LocalStore>(
 );
 
 final syncEngineProvider = Provider<SyncEngine>(
-  (ref) => SyncEngine(ref.watch(databaseProvider), ref.watch(apiClientProvider), ref.watch(localStoreProvider)),
+  (ref) => SyncEngine(
+    ref.watch(databaseProvider),
+    ref.watch(apiClientProvider),
+    ref.watch(localStoreProvider),
+    onBillingStamp: (stamp) => ref.read(entitlementsProvider.notifier).stampSeen(stamp),
+    onPlanLimit: (meta) {
+      ref.read(planLimitNoticeProvider.notifier).raise(PlanLimitException.fromJson(meta));
+      // The phone's idea of the plan was out of date, or it would have stopped this itself
+      ref.read(entitlementsProvider.notifier).refresh();
+    },
+  ),
 );
 
 // -------------------------------------------------------------------- auth
@@ -104,7 +116,15 @@ class AuthController extends Notifier<AuthState> {
   Future<String?> signUp(String email, String password) =>
       _run(() => _auth.signUp(email, password), email: email);
 
-  Future<String?> logIn(String email, String password) => _run(() => _auth.logIn(email, password), email: email);
+  /// With an email or a username. Only an email is kept for display.
+  Future<String?> logIn(String identifier, String password) => _run(
+        () => _auth.logIn(identifier, password),
+        email: AuthRepository.isEmail(identifier) ? identifier : null,
+      );
+
+  /// Without [current] it sets a first password, for an account made with Google.
+  Future<String?> changePassword({String? current, required String next}) =>
+      _run(() => _auth.changePassword(current: current, next: next), email: state.email);
 
   Future<String?> logInWithGoogle({required String idToken, required String clientId}) =>
       _run(() => _auth.logInWithGoogle(idToken: idToken, clientId: clientId));
@@ -161,6 +181,11 @@ class AuthController extends Notifier<AuthState> {
     await _db.setSetting(CurrentWorkspaceController.settingKey, null);
     await _db.setSetting(onboardedSettingKey, null);
     await _db.setSetting(onboardingUnsentKey, null);
+    await _db.setSetting(profileSettingKey, null);
+    await _db.setSetting(entitlementsSettingKey, null);
+    await _db.setSetting(billingStampSettingKey, null);
+    await _db.setSetting(offersDismissedSettingKey, null);
+    await _db.setSetting(keepPromptedSettingKey, null);
   }
 }
 

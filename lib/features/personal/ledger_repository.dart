@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/db/local_store.dart';
+import '../../core/entitlements/entitlements.dart';
+import '../../core/entitlements/entitlements_controller.dart';
+import '../../core/entitlements/plan_guard.dart';
 import '../../core/providers.dart';
 
 class AccountBalance {
@@ -87,10 +90,14 @@ String monthKey(DateTime date) => isoDate(DateTime(date.year, date.month, 1));
 int daysInMonth(DateTime month) => DateTime(month.year, month.month + 1, 0).day;
 
 class LedgerRepository {
-  LedgerRepository(this.db, this.store);
+  LedgerRepository(this.db, this.store, [this.plan]);
 
   final AppDatabase db;
   final LocalStore store;
+
+  /// Refuses what the plan does not allow with a PlanLimitException, before
+  /// anything is written. Without one nothing is checked here.
+  final PlanGuard? plan;
 
   Stream<List<AccountBalance>> watchAccounts(String workspaceId) => db
       .customSelect(
@@ -312,33 +319,45 @@ class LedgerRepository {
     required String kind,
     required String currency,
     int openingBalanceMinor = 0,
-  }) =>
-      store.create('accounts', workspaceId, {
-        'name': name,
-        'kind': kind,
-        'currency': currency,
-        'opening_balance_minor': openingBalanceMinor,
-        'is_archived': false,
-      });
+  }) async {
+    await plan?.roomFor(F.personalAccounts, workspaceId);
+    return store.create('accounts', workspaceId, {
+      'name': name,
+      'kind': kind,
+      'currency': currency,
+      'opening_balance_minor': openingBalanceMinor,
+      'is_archived': false,
+    });
+  }
 
   Future<void> updateAccount(Account original, {
     required String name,
     required String kind,
     required int openingBalanceMinor,
     required bool isArchived,
-  }) =>
-      store.update('accounts', original.id, {
-        if (name != original.name) 'name': name,
-        if (kind != original.kind) 'kind': kind,
-        if (openingBalanceMinor != original.openingBalanceMinor) 'opening_balance_minor': openingBalanceMinor,
-        if (isArchived != original.isArchived) 'is_archived': isArchived,
-      });
+  }) async {
+    // An archived account does not count, so bringing one back needs room like a new one
+    if (original.isArchived && !isArchived) await plan?.roomFor(F.personalAccounts, original.workspaceId);
+    // A locked account can still be archived, which is one way back under the limit
+    if (!isArchived) plan?.writable(F.personalAccounts, original.id);
+    await store.update('accounts', original.id, {
+      if (name != original.name) 'name': name,
+      if (kind != original.kind) 'kind': kind,
+      if (openingBalanceMinor != original.openingBalanceMinor) 'opening_balance_minor': openingBalanceMinor,
+      if (isArchived != original.isArchived) 'is_archived': isArchived,
+    });
+  }
 
-  Future<String> addCategory(String workspaceId, String name, String kind) =>
-      store.create('categories', workspaceId, {'name': name, 'kind': kind});
+  Future<String> addCategory(String workspaceId, String name, String kind) async {
+    await plan?.roomFor(F.customCategories, workspaceId);
+    return store.create('categories', workspaceId, {'name': name, 'kind': kind});
+  }
 
-  Future<void> renameCategory(Category category, String name) =>
-      name == category.name ? Future.value() : store.update('categories', category.id, {'name': name});
+  Future<void> renameCategory(Category category, String name) async {
+    if (name == category.name) return;
+    plan?.writable(F.customCategories, category.id);
+    await store.update('categories', category.id, {'name': name});
+  }
 
   /// Transactions filed under the category, for the warning before deleting it.
   Future<int> transactionCount(String categoryId) async {
@@ -373,28 +392,41 @@ class LedgerRepository {
     required String occurredOn,
     String? categoryId,
     String note = '',
-  }) =>
-      store.create(
-        'transactions',
-        account.workspaceId,
-        {
-          'account_id': account.id,
-          'category_id': categoryId,
-          'kind': kind,
-          'amount_minor': kind == 'expense' ? -amountMinor : amountMinor,
-          'transfer_group_id': null,
-          'occurred_on': occurredOn,
-          'note': note,
-          'source': 'manual',
-        },
-        localOnly: {'currency': account.currency},
-      );
+  }) async {
+    // A locked account is read-only, its transactions included
+    plan?.writable(F.personalAccounts, account.id);
+    return store.create(
+      'transactions',
+      account.workspaceId,
+      {
+        'account_id': account.id,
+        'category_id': categoryId,
+        'kind': kind,
+        'amount_minor': kind == 'expense' ? -amountMinor : amountMinor,
+        'transfer_group_id': null,
+        'occurred_on': occurredOn,
+        'note': note,
+        'source': 'manual',
+      },
+      localOnly: {'currency': account.currency},
+    );
+  }
 
   /// Money moving between two of the user's own accounts: two legs that cancel out.
   Future<void> addTransfer(Account from, Account to, {
     required int amountMinor,
     required String occurredOn,
     String note = '',
+  }) async {
+    plan?.writable(F.personalAccounts, from.id);
+    plan?.writable(F.personalAccounts, to.id);
+    return _addTransfer(from, to, amountMinor: amountMinor, occurredOn: occurredOn, note: note);
+  }
+
+  Future<void> _addTransfer(Account from, Account to, {
+    required int amountMinor,
+    required String occurredOn,
+    required String note,
   }) =>
       db.transaction(() async {
         final group = newId();
@@ -422,7 +454,8 @@ class LedgerRepository {
     required String occurredOn,
     String? categoryId,
     String note = '',
-  }) {
+  }) async {
+    plan?.writable(F.personalAccounts, original.accountId);
     final signed = original.amountMinor < 0 ? -amountMinor : amountMinor;
     return store.update('transactions', original.id, {
       if (signed != original.amountMinor) 'amount_minor': signed,
@@ -451,6 +484,8 @@ class LedgerRepository {
   /// ([month] as from [monthKey]); setting either again changes its amount.
   Future<void> setBudget(String workspaceId, String categoryId, int amountMinor, String currency,
       {String? month}) async {
+    // The every-month budget is for everyone; a different limit for one month is a plan feature
+    if (month != null) await plan?.require(F.budgetMonthOverride, workspaceId);
     final existing = await (db.select(db.budgets)
           ..where((b) =>
               b.categoryId.equals(categoryId) &
@@ -474,7 +509,7 @@ class LedgerRepository {
 }
 
 final ledgerRepositoryProvider = Provider<LedgerRepository>(
-  (ref) => LedgerRepository(ref.watch(databaseProvider), ref.watch(localStoreProvider)),
+  (ref) => LedgerRepository(ref.watch(databaseProvider), ref.watch(localStoreProvider), ref.watch(planGuardProvider)),
 );
 
 final accountsProvider = StreamProvider.family<List<AccountBalance>, String>(

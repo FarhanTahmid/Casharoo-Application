@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
+import '../../core/entitlements/entitlements.dart';
+import '../../core/entitlements/entitlements_controller.dart';
 import '../../core/money.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../plan/plan_page.dart';
+import '../plan/plan_text.dart';
+import '../plan/upgrade_sheet.dart';
 import 'ledger_repository.dart';
 
 /// Slice colours for the spending chart. The first is the theme's primary, so
@@ -626,7 +631,9 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
     context.showMessage(message);
   }
 
-  Future<void> _save(List<AccountBalance> accounts) async {
+  Future<void> _save(List<AccountBalance> accounts) => guarded(context, () => _write(accounts));
+
+  Future<void> _write(List<AccountBalance> accounts) async {
     if (!_formKey.currentState!.validate()) return setState(() => _refused++);
     final l10n = context.l10n;
     final repo = ref.read(ledgerRepositoryProvider);
@@ -771,9 +778,15 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                 noneLabel: l10n.none,
                 options: [for (final c in categories) SelectOption(c.id, c.name)],
                 createLabel: l10n.newCategory,
-                onCreate: (name) => ref
-                    .read(ledgerRepositoryProvider)
-                    .addCategory(widget.workspace.id, name, _kind == 'income' ? 'income' : 'expense'),
+                onCreate: (name) async {
+                  String? id;
+                  await guarded(context, () async {
+                    id = await ref
+                        .read(ledgerRepositoryProvider)
+                        .addCategory(widget.workspace.id, name, _kind == 'income' ? 'income' : 'expense');
+                  });
+                  return id;
+                },
                 onChanged: (value) => setState(() => _categoryId = value),
               ),
               const SizedBox(height: 12),
@@ -808,6 +821,7 @@ class AccountsPage extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final currency = workspace.defaultCurrency;
     final value = ref.watch(accountsProvider(workspace.id));
+    final plan = ref.watch(entitlementsProvider).value;
     final total = (value.value ?? const <AccountBalance>[])
         .where((a) => a.account.currency == currency && !a.account.isArchived)
         .fold<int>(0, (sum, a) => sum + a.balanceMinor);
@@ -840,9 +854,23 @@ class AccountsPage extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(item.account.name, style: text.titleMedium, overflow: TextOverflow.ellipsis),
-                                  Text(
-                                    item.account.isArchived ? l10n.archived : accountKindLabel(context, item.account.kind),
-                                    style: text.bodySmall?.copyWith(fontSize: 13),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          item.account.isArchived
+                                              ? l10n.archived
+                                              : accountKindLabel(context, item.account.kind),
+                                          style: text.bodySmall?.copyWith(fontSize: 13),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      // Read-only since a downgrade; archiving it is still allowed
+                                      if (!item.account.isArchived && (plan?.isLocked(item.account.id) ?? false)) ...[
+                                        const SizedBox(width: 8),
+                                        const LockedTag(),
+                                      ],
+                                    ],
                                   ),
                                 ],
                               ),
@@ -857,6 +885,7 @@ class AccountsPage extends ConsumerWidget {
                 ),
               ),
             AddRowButton(label: l10n.addAccount, onPressed: () => showAccountForm(context, workspace)),
+            LimitHint(feature: F.personalAccounts, workspace: workspace),
           ],
         ),
       ),
@@ -898,7 +927,9 @@ class _AccountFormState extends ConsumerState<_AccountForm> {
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _save() => guarded(context, _write);
+
+  Future<void> _write() async {
     if (!_formKey.currentState!.validate()) return setState(() => _refused++);
     final repo = ref.read(ledgerRepositoryProvider);
     final opening = Money.evaluate(_opening.text, _currency)!;

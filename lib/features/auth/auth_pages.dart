@@ -122,9 +122,6 @@ mixin _Submitting<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 String? _validateEmail(BuildContext context, String? value) =>
     RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value?.trim() ?? '') ? null : context.l10n.enterEmail;
 
-String? _validatePassword(BuildContext context, String? value) =>
-    (value ?? '').length >= 8 ? null : context.l10n.passwordTooShort;
-
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key, this.signUp = false});
 
@@ -136,21 +133,25 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
-  final _email = TextEditingController();
+  /// The email at sign-up; the email or the username at login.
+  final _identifier = TextEditingController();
   final _password = TextEditingController();
-  bool _obscure = true;
+  final _confirm = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
+    _identifier.dispose();
     _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
   Future<void> _submit() {
     final auth = ref.read(authControllerProvider.notifier);
-    final email = _email.text.trim();
-    return submit(() => widget.signUp ? auth.signUp(email, _password.text) : auth.logIn(email, _password.text));
+    final identifier = _identifier.text.trim();
+    return submit(
+      () => widget.signUp ? auth.signUp(identifier, _password.text) : auth.logIn(identifier, _password.text),
+    );
   }
 
   Future<void> _google() => submit(() async {
@@ -178,35 +179,47 @@ class _LoginPageState extends ConsumerState<LoginPage> with _Submitting {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.email],
-                decoration: InputDecoration(labelText: l10n.email, prefixIcon: const Icon(Icons.mail_outline_rounded)),
-                validator: (value) => _validateEmail(context, value),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _password,
-                obscureText: _obscure,
-                autofillHints: [widget.signUp ? AutofillHints.newPassword : AutofillHints.password],
-                decoration: InputDecoration(
-                  labelText: l10n.password,
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                  suffixIcon: IconButton(
-                    icon: PopSwitcher(
-                      child: Icon(
-                        _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        key: ValueKey(_obscure),
-                      ),
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+              if (widget.signUp)
+                TextFormField(
+                  controller: _identifier,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: InputDecoration(labelText: l10n.email, prefixIcon: const Icon(Icons.mail_outline_rounded)),
+                  validator: (value) => _validateEmail(context, value),
+                )
+              else
+                TextFormField(
+                  controller: _identifier,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  autocorrect: false,
+                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                  decoration: InputDecoration(
+                    labelText: l10n.emailOrUsername,
+                    prefixIcon: const Icon(Icons.person_outline_rounded),
                   ),
+                  validator: (value) => (value ?? '').trim().isEmpty ? l10n.enterEmailOrUsername : null,
                 ),
-                validator: (value) => widget.signUp ? _validatePassword(context, value) : null,
-                onFieldSubmitted: (_) => _submit(),
+              const SizedBox(height: 12),
+              PasswordField(
+                controller: _password,
+                label: l10n.password,
+                newPassword: widget.signUp,
+                textInputAction: widget.signUp ? TextInputAction.next : TextInputAction.done,
+                validator: (value) => widget.signUp ? validateNewPassword(context, value) : null,
+                onSubmitted: widget.signUp ? null : (_) => _submit(),
               ),
+              if (widget.signUp) ...[
+                const SizedBox(height: 12),
+                PasswordField(
+                  controller: _confirm,
+                  label: l10n.confirmPassword,
+                  newPassword: true,
+                  validator: (value) => validatePasswordMatch(context, value, _password),
+                  onSubmitted: (_) => _submit(),
+                ),
+              ],
             ],
           ),
         ),
@@ -352,11 +365,13 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> with _Submitting {
   final _code = TextEditingController();
   final _password = TextEditingController();
+  final _confirm = TextEditingController();
 
   @override
   void dispose() {
     _code.dispose();
     _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -379,15 +394,19 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> with _Sub
                 validator: (value) => (value ?? '').trim().isEmpty ? l10n.code : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              PasswordField(
                 controller: _password,
-                obscureText: true,
-                autofillHints: const [AutofillHints.newPassword],
-                decoration: InputDecoration(
-                  labelText: l10n.newPassword,
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                ),
-                validator: (value) => _validatePassword(context, value),
+                label: l10n.newPassword,
+                newPassword: true,
+                textInputAction: TextInputAction.next,
+                validator: (value) => validateNewPassword(context, value),
+              ),
+              const SizedBox(height: 12),
+              PasswordField(
+                controller: _confirm,
+                label: l10n.confirmNewPassword,
+                newPassword: true,
+                validator: (value) => validatePasswordMatch(context, value, _password),
               ),
             ],
           ),

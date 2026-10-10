@@ -8,12 +8,14 @@ import 'theme.dart';
 export 'package:flutter/services.dart' show HapticFeedback, SystemUiOverlayStyle;
 
 export 'design/amounts.dart';
+export 'design/avatar.dart';
 export 'design/buttons.dart';
 export 'design/fields.dart';
 export 'design/keypad.dart';
 export 'design/layout.dart';
 export 'design/loaders.dart';
 export 'design/motion.dart';
+export 'design/password_field.dart';
 export 'design/rows.dart';
 export 'design/segmented.dart';
 export 'design/select_field.dart';

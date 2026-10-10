@@ -3,9 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/db/database.dart';
+import '../../core/entitlements/entitlements.dart';
+import '../../core/entitlements/entitlements_controller.dart';
 import '../../core/money.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../plan/plan_page.dart';
+import '../plan/plan_text.dart';
+import '../plan/upgrade_sheet.dart';
 import 'cashbook_repository.dart';
 
 /// Light enough to read as "money out" on the navy header.
@@ -24,6 +29,7 @@ class CashbooksPage extends ConsumerWidget {
     final l10n = context.l10n;
     final text = Theme.of(context).textTheme;
     final value = ref.watch(cashbooksProvider(workspace.id));
+    final plan = ref.watch(entitlementsProvider).value;
     final total = (value.value ?? const <CashbookSummary>[])
         .where((s) => s.book.currency == workspace.defaultCurrency)
         .fold<int>(0, (sum, s) => sum + s.balanceMinor);
@@ -55,8 +61,9 @@ class CashbooksPage extends ConsumerWidget {
                   ])
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(AppSpace.page, AppSpace.lg, AppSpace.page, 96),
-                    itemCount: books.length,
+                    itemCount: books.length + 1,
                     itemBuilder: (context, index) {
+                      if (index == books.length) return LimitHint(feature: F.businessCashbooks, workspace: workspace);
                       final summary = books[index];
                       return Entrance(
                         index: index,
@@ -78,11 +85,23 @@ class CashbooksPage extends ConsumerWidget {
                                         Text(summary.book.bookName,
                                             style: text.titleMedium, overflow: TextOverflow.ellipsis),
                                         // A book in another currency is not in the total above: say which
-                                        Text(
-                                            summary.book.currency == workspace.defaultCurrency
-                                                ? l10n.entriesCount(summary.entryCount)
-                                                : '${l10n.entriesCount(summary.entryCount)} · ${summary.book.currency}',
-                                            style: text.bodySmall?.copyWith(fontSize: 13)),
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                  summary.book.currency == workspace.defaultCurrency
+                                                      ? l10n.entriesCount(summary.entryCount)
+                                                      : '${l10n.entriesCount(summary.entryCount)} · ${summary.book.currency}',
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: text.bodySmall?.copyWith(fontSize: 13)),
+                                            ),
+                                            // Read-only since a downgrade
+                                            if (plan?.isLocked(summary.book.id) ?? false) ...[
+                                              const SizedBox(width: 8),
+                                              const LockedTag(),
+                                            ],
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -140,8 +159,11 @@ class _CashbookFormState extends ConsumerState<_CashbookForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return setState(() => _refused++);
-    await ref.read(cashbookRepositoryProvider).createCashbook(widget.workspace.id, _name.text.trim(), _currency);
-    if (!mounted) return;
+    final created = await guarded(
+      context,
+      () => ref.read(cashbookRepositoryProvider).createCashbook(widget.workspace.id, _name.text.trim(), _currency),
+    );
+    if (!created || !mounted) return;
     showEventBurst(context, AppEvent.saved);
     Navigator.pop(context);
   }
@@ -219,7 +241,9 @@ class CashbookPage extends ConsumerWidget {
                   if (action == 'rename') {
                     final name =
                         await promptText(context, title: l10n.rename, label: l10n.cashbookName, initial: book.bookName);
-                    if (name != null) await repo.renameCashbook(bookId, name);
+                    if (name != null && context.mounted) {
+                      await guarded(context, () => repo.renameCashbook(bookId, name));
+                    }
                   } else if (await confirm(context, l10n.deleteConfirm)) {
                     await repo.deleteCashbook(bookId);
                     if (!context.mounted) return;
@@ -402,7 +426,9 @@ class _EntryFormPageState extends ConsumerState<EntryFormPage> {
 
   String? _blankToNull(String text) => text.trim().isEmpty ? null : text.trim();
 
-  Future<void> _save() async {
+  Future<void> _save() => guarded(context, _write);
+
+  Future<void> _write() async {
     if (!_formKey.currentState!.validate()) return setState(() => _refused++);
     final repo = ref.read(cashbookRepositoryProvider);
     final amount = Money.evaluate(_amount.text, widget.book.currency)!;

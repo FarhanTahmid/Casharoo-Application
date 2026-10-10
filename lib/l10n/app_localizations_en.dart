@@ -632,4 +632,410 @@ class AppLocalizationsEn extends AppLocalizations {
   String paceOver(String amount) {
     return '$amount over budget';
   }
+
+  @override
+  String get emailOrUsername => 'Email or username';
+
+  @override
+  String get enterEmailOrUsername => 'Enter your email or username';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get confirmNewPassword => 'Confirm new password';
+
+  @override
+  String get passwordsDontMatch => 'Passwords don\'t match';
+
+  @override
+  String get currentPassword => 'Current password';
+
+  @override
+  String get enterCurrentPassword => 'Enter your current password';
+
+  @override
+  String get passwordSameAsCurrent =>
+      'Choose a password different from your current one';
+
+  @override
+  String get passwordUpdated => 'Password updated.';
+
+  @override
+  String get changePassword => 'Change password';
+
+  @override
+  String get setPassword => 'Set a password';
+
+  @override
+  String get setPasswordHint =>
+      'You signed in with Google. Set a password to also log in with your email or username.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get profileHint => 'Photo, username and password';
+
+  @override
+  String get profileDetails => 'Details';
+
+  @override
+  String get signInAndSecurity => 'Sign-in and security';
+
+  @override
+  String get firstName => 'First name';
+
+  @override
+  String get lastName => 'Last name';
+
+  @override
+  String get bio => 'About you';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get profileSaved => 'Profile saved.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get usernameHint => 'You can log in with it instead of your email.';
+
+  @override
+  String get usernameChecking => 'Checking…';
+
+  @override
+  String get usernameAvailable => 'Available';
+
+  @override
+  String get usernameTaken => 'Already taken';
+
+  @override
+  String get usernameInvalid => 'Use letters, numbers and . _ + - only';
+
+  @override
+  String get usernameYours => 'This is your username';
+
+  @override
+  String get usernameSuggestions => 'Free ones like it:';
+
+  @override
+  String get changeUsername => 'Change username';
+
+  @override
+  String get usernameChanged => 'Username changed.';
+
+  @override
+  String get confirmWithPassword =>
+      'Enter your password to confirm this change.';
+
+  @override
+  String get confirmChange => 'Confirm';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get takePhoto => 'Take a photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from gallery';
+
+  @override
+  String get removePhoto => 'Remove photo';
+
+  @override
+  String get cropPhoto => 'Crop photo';
+
+  @override
+  String get photoUpdated => 'Profile photo updated.';
+
+  @override
+  String get photoRemoved => 'Profile photo removed.';
+
+  @override
+  String get plan => 'Plan';
+
+  @override
+  String get planYours => 'Your plan';
+
+  @override
+  String planUntil(String date) {
+    return 'Until $date';
+  }
+
+  @override
+  String get planGraceNote =>
+      'Your payment is late. The plan stays on for a few more days.';
+
+  @override
+  String get planSeePlans => 'See plans';
+
+  @override
+  String get planUsage => 'What you are using';
+
+  @override
+  String planCountOf(int count, int limit) {
+    return '$count of $limit';
+  }
+
+  @override
+  String get planUnlimited => 'Unlimited';
+
+  @override
+  String planResetsOn(String date) {
+    return 'Starts again on $date';
+  }
+
+  @override
+  String get planRedeem => 'Redeem a code';
+
+  @override
+  String get planRedeemHint => 'Have a promo code? Enter it here.';
+
+  @override
+  String planCodeApplied(String plan) {
+    return 'Code applied. You are on the $plan plan.';
+  }
+
+  @override
+  String get planThrottled => 'Too many tries. Wait a while and try again.';
+
+  @override
+  String get planUpgradeTitle => 'Get more from Spendroo';
+
+  @override
+  String get planBuySoon =>
+      'Buying a plan in the app is coming soon. If you have a code, use it below.';
+
+  @override
+  String get planSimulate => 'Simulate purchase (test build)';
+
+  @override
+  String get planSimulateExpire => 'End my plan now (test build)';
+
+  @override
+  String get planLoadFailed =>
+      'Could not load the plans. Check your connection.';
+
+  @override
+  String get planOffers => 'Offers';
+
+  @override
+  String get planUpgrade => 'Upgrade';
+
+  @override
+  String planEverythingIn(String plan) {
+    return 'Everything in $plan, and:';
+  }
+
+  @override
+  String limitAccounts(String plan, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: '$limit accounts',
+      one: '1 account',
+    );
+    return 'Your $plan plan allows $_temp0.';
+  }
+
+  @override
+  String limitCategories(String plan, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: '$limit categories',
+      one: '1 category',
+    );
+    return 'Your $plan plan allows $_temp0 of your own.';
+  }
+
+  @override
+  String limitCashbooks(String plan, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: '$limit cashbooks',
+      one: '1 cashbook',
+    );
+    return 'Your $plan plan allows $_temp0 in a business.';
+  }
+
+  @override
+  String limitWorkspaces(String plan, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: '$limit businesses',
+      one: '1 business',
+      zero: 'no business',
+    );
+    return 'Your $plan plan allows $_temp0.';
+  }
+
+  @override
+  String limitGeneric(String plan) {
+    return 'Your $plan plan does not allow more of this.';
+  }
+
+  @override
+  String limitFeature(String feature, String plan) {
+    return '$feature is not part of your $plan plan.';
+  }
+
+  @override
+  String limitLocked(String plan) {
+    return 'This is read-only on your $plan plan. Upgrade, or choose what to keep.';
+  }
+
+  @override
+  String limitQuota(String feature) {
+    return 'This month\'s allowance is used up: $feature.';
+  }
+
+  @override
+  String get featureAccounts => 'Accounts';
+
+  @override
+  String get featureCustomCategories => 'Categories of your own';
+
+  @override
+  String get featureBudgetMonthOverride => 'A different budget for one month';
+
+  @override
+  String get featureInsightsCustomRange => 'Insights for any dates';
+
+  @override
+  String get featureYearReview => 'Year in review';
+
+  @override
+  String get featureTrendMonths => 'Months of trends';
+
+  @override
+  String get featureRecurring => 'Recurring transactions and reminders';
+
+  @override
+  String get featureSavingsGoals => 'Savings goals';
+
+  @override
+  String get featureHomeWidget => 'Home screen widget';
+
+  @override
+  String get featureBusinesses => 'Businesses';
+
+  @override
+  String get featureCashbooks => 'Cashbooks in a business';
+
+  @override
+  String get featureTeamSeats => 'Team members';
+
+  @override
+  String get featureReportRange => 'Reports for any dates';
+
+  @override
+  String get featureReportExport => 'Reports as PDF and Excel';
+
+  @override
+  String get featureAuditTrail => 'History of every change';
+
+  @override
+  String get featureCustomFields => 'Extra fields on entries';
+
+  @override
+  String get featureStorage => 'Storage for bills, in MB';
+
+  @override
+  String get featureAiCredits => 'AI credits a month';
+
+  @override
+  String get featurePdfPages => 'Statement pages read a month';
+
+  @override
+  String get featureDevices => 'Devices';
+
+  @override
+  String get featureNoAds => 'No ads';
+
+  @override
+  String get keepTitle => 'Choose what to keep';
+
+  @override
+  String get keepIntro =>
+      'Your plan now allows fewer than you have. Choose the ones to go on editing. The rest stay safe and readable; nothing is deleted.';
+
+  @override
+  String keepChosen(int chosen, int limit) {
+    return '$chosen of $limit chosen';
+  }
+
+  @override
+  String get keepSave => 'Keep these';
+
+  @override
+  String get keepSaved => 'Saved. The others are read-only.';
+
+  @override
+  String keepChangeFrom(String date) {
+    return 'You can change this again from $date.';
+  }
+
+  @override
+  String get keepPendingNote =>
+      'Until you choose, the oldest ones stay editable.';
+
+  @override
+  String get keepOnceNote =>
+      'Choose with care: after saving, this cannot be changed for a while.';
+
+  @override
+  String get keepNothing =>
+      'Nothing is locked. Everything you have fits your plan.';
+
+  @override
+  String keepIn(String feature, String workspace) {
+    return '$feature in $workspace';
+  }
+
+  @override
+  String keepLockedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items are read-only',
+      one: '1 item is read-only',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOffline => 'Connect to the internet to change this.';
+
+  @override
+  String get defaultTag => 'Default';
+
+  @override
+  String customCount(int count, int limit) {
+    return 'Your own: $count of $limit';
+  }
+
+  @override
+  String offerEnds(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String get offerClaim => 'Get it';
+
+  @override
+  String get offerClaimed => 'It is yours now. Enjoy!';
+
+  @override
+  String get offerActive => 'On for you';
+
+  @override
+  String get lockedTag => 'Locked';
 }
